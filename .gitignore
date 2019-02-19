@@ -1,0 +1,8 @@
+.idea/
+/tmp/
+/revizor/
+#/vendor/
+
+config_db.php
+
+*.rar

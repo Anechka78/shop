@@ -1,0 +1,8 @@
+
+
+AddDefaultCharset utf-8
+RewriteEngine On
+
+RewriteCond %{REQUEST_URI} !^.*revizor.*$
+
+RewriteRule ^(.*)$ /public/$1

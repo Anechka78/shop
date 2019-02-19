@@ -1,0 +1,19 @@
+{
+    "name": "anna/www",
+    "authors": [
+        {
+            "name": "Anechka78",
+            "email": "7winx@bk.ru"
+        }
+    ],
+    "require": {
+        "phpmailer/phpmailer": "^6.0",
+        "vlucas/valitron": "^1.4"
+    },
+    "autoload": {
+        "psr-4": {
+            "im\\": "vendor/im",
+            "app\\": "app"
+        }
+    }
+}

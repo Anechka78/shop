@@ -20,7 +20,7 @@
     </div>
 </div>
 <div class="line"></div>
-<?php //debug($_SESSION); ?>
+<?php //debug($product); ?>
 
 <section class="sectionProduct">
 
@@ -28,15 +28,15 @@
         <div class="product-info">
             <div class="product-images">
                 <div style="width: 550px; text-align: center;">
-                    <?php if(count($gallery) > 1): ?>
+                    <?php if(count($product['gallery']) > 1): ?>
                     <div class="slider-for" style="width: 100%;">
-                        <?php foreach($gallery as $item): ?>
+                        <?php foreach($product['gallery'] as $item): ?>
                         <div><img style="height: 400px; margin: 0 auto;" src="/images/products/<?=$item['image'];?>" <!--data-imagezoom="true" class="img-responsive"--> ></div>
                         <?php endforeach; ?>
                     </div>
                     <br>
                     <div class="slider-nav" style="padding-bottom: 40px; width: 100%;">
-                        <?php foreach($gallery as $item): ?>
+                        <?php foreach($product['gallery'] as $item): ?>
                         <div><img style="height: 100px; margin: 0 auto; padding: 0 2px;" src="/images/products/<?=$item['image'];?>"></div>
                         <?php endforeach; ?>
                     </div>
@@ -97,7 +97,7 @@
                     <span style="display: none;" class="properties_data_arr" ></span>
                 </div>
                 <!--Блок с зависимыми (родитель-ребенок) характеристиками товара из таблицы properties_dependences -->
-                <?php if(!empty($product['parentArr'])): ?>
+                <?php if(!empty($product['parentArr'])): ?><?php //debug($product['parentArr'])?>
                 <div class="product-size-colors">
 
                     <div class="sizes">

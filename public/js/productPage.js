@@ -27,6 +27,7 @@ $(document).ready(function() {
 		//сбрасываем активный класс у родительских и дочерних характеристик
 		$('.sizes span').removeClass('active');
 		$('.colors span').removeClass('active');
+		$('.btn__cart').removeClass('hidden');
 
 		//ставим активный класс родительской характеристике, по которой кликнули
 		$(this).addClass('active');
@@ -38,11 +39,26 @@ $(document).ready(function() {
 		//парсим атрибут data-color родительской характеристики, чтобы получить массив доступных дочерних вариантов
 		// например, для размера (род х-ка) выбираем все доступные цвета (дочерние хар-ки)
 		var colors = JSON.parse($(this).attr('data-color'));
-
+		//console.log(colors);
 		for(var key in colors){
 			//console.log(colors[key]['child_val']);
 			//для доступных в родителе детей снимаем невидимость
 			$('.colors span[title="'+colors[key]['child_val']+'"]').removeClass('hidden');
+			if(colors[key]['count'] == 0){
+				var color = $('.colors span[title="'+colors[key]['child_val']+'"]');
+				//console.log(color);
+				//color.removeClass('active');
+				color.addClass('nonactive');
+
+				var span = document.createElement('span');
+				$(span).addClass('not_in_stock');
+
+				$(span).insertBefore('.nonactive');
+				//$('.btn__cart').addClass('hidden');
+				$('.colors span.not_in_stock').on('click', function(){
+					$('.btn__cart').addClass('hidden');
+				});
+			}
 		}
 
 		if($('.colors span.active').hasClass('hidden')){
@@ -53,8 +69,11 @@ $(document).ready(function() {
 		$('.btn__cart').attr('data-pdobj', '');
 	});
 
-	$('.colors span').on('click', function(){
 
+
+	$('.colors span').on('click', function(){
+		//если был выбран ранее отсутствующий цвет
+		$('.btn__cart').removeClass('hidden');
 		//выбранный цвет
 		var curcolor = $(this).attr('data-color');
 		//console.log(curcolor);
@@ -425,7 +444,7 @@ $(document).ready(function() {
 				dataType: 'json',
 				success: function(data){//в результате успешного выполнения отрабатывает ф-я data
 					alert(data['message']); // выводим сообщение об успехе
-					//console.log(data);
+					console.log(data);
 					if(data['success']){//при условии, что success=1
 						showMiniCart(data['cart']);// выводим сообщение
 					}

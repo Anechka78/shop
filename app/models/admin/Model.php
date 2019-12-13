@@ -13,7 +13,7 @@ class Model extends \im\core\base\Model
      * @param $id id той записи, для которой нужно сделать транслитерацию
      * @return mixed|string
      */
-    public function createAlias($table, $field, $str, $id){
+    public function createAlias($table, $field, $str, $id=''){
         $str = self::str2url($str);
         $res = $this->findOne($str, $field, $table);
         if($res){

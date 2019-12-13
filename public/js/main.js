@@ -16,13 +16,56 @@ $( document ).ready(function(){
         if(e.target == popup){
             popup.style.display = "none";
         }
-    };
+        if(e.target.id == 'clear_from_cart'){
+            $.ajax({
+                type: 'POST',
+                async: false,
+                url: "/cart/clear-diff",
+                dataType: 'json',
+                success: function(data){
+                    console.log(data);
+                    if (data['success']){
+                        alert(data['message']);
+                        var div = document.getElementsByClassName('cart-diff')[0];
+                        $(div).css('display', 'none');
+                    } else{ // если произошла ошибка
+                        alert(data['message']);
+                    }
+                }
+            });
+        }
+        if(e.target.id == 'add_in_cart'){
+            $.ajax({
+                type: 'POST',
+                async: false,
+                url: "/cart/add-diff",
+                dataType: 'json',
+                success: function(data){
+                    console.log(data);
+                    if (data['success']){
+                        alert(data['message']);
+                        var div = document.getElementsByClassName('cart-diff')[0];
+                        $(div).css('display', 'none');
+                        showMiniCart(data['cart']);
+                    } else{ // если произошла ошибка
+                        alert(data['message']);
+                    }
+                }
+            });
+        }
 
+
+    };
 
     //*****************************изменение валюты****************
     $('#currency').change(function(){
         window.location = '/currency/change?curr=' + $(this).val();
     });
+
+
+});
+
+
 
 
     //*****************************РЕГИСТРАЦИЯ**********************
@@ -127,7 +170,6 @@ $( document ).ready(function(){
     //*****************************РЕГИСТРАЦИЯ END**********************
 
 
-});
 
 function showMiniCart(cart){
     //console.log(cart);
@@ -160,7 +202,7 @@ function getData(obj_form){ //переметром передается объе
  */
 function registerNewUser(){
     var postData = getData('#registerBox'); //получаем данные (registerBox), обрабатываем их getData и заносим в переменную postData
-console.log(postData); die();
+//console.log(postData); die();
     $.ajax({
         type: 'POST',
         async: false,
@@ -172,10 +214,26 @@ console.log(postData); die();
             console.log(data);
             if (data['success']){ // если ключ success, который там есть истинен, то пишем, что регистрация прошла успешно
                 alert(data['message']);
-                var div = document.createElement('div');
-                $(div).addClass('success-info');
-                div.innerHTML = 'Вы успешно зарегистрированы, теперь можете авторизоваться!';
-                $(div).insertBefore('#registerBoxHidden');
+                //var div = document.createElement('div');
+                //$(div).addClass('success-info');
+                //div.innerHTML = 'Вы успешно зарегистрированы на сайте!';
+                //$(div).insertBefore('#registerBoxHidden');
+                $('#email').val('');
+                $('#pwd1').val('');
+                $('#pwd2').val('');
+                var popup = document.getElementById('mypopup');
+                popup.style.display = "none";
+                $("#success-email").hide();
+                $("#success-pwd1").hide();
+                $("#success-pwd2").hide();
+                //$(".success-info").hide();
+
+                //$('#registerBox').hide(); // прячем формы после успешной авторизации -это и слева и на странице оформления заказа, тк идентификаторы названы одинаково
+                //$('#loginBox').hide();
+
+                //$('#userLink').attr('href', '/user/'); // ссылка на личную страничку пользователя
+                //$('#userLink').html("Вы вошли как: " + data['user']['attributes']['email']); // имя или мыло польз-ля
+                //$('#userBox').show(); // показываем опцию выхода
 
             } else{ // если произошла ошибка
                 alert(data['message']);
@@ -204,7 +262,7 @@ function login(){
         data: {email:email, pwd: pwd},
         dataType: 'json',
         success: function(data){
-            //console.log(data);
+            console.log(data);
             if(data['success']){
                 $('.error-info').remove();
                 alert(data['message']);
@@ -214,6 +272,11 @@ function login(){
                 $('#userLink').attr('href', '/user/'); // ссылка на личную страничку пользователя
                 $('#userLink').html("Вы вошли как: " + data['user']['login']); // имя или мыло польз-ля
                 $('#userBox').show(); // показываем опцию выхода
+
+                //показываем вверху миникорзину с итоговой суммой заказа и кол-вом товаров
+                if(data['cart']){
+                    showMiniCart(data['cart']);
+                }
 
                 //удаляем поля на странице заказа /cart/index - авторизация, регистрация, покупка в один клик
                 $('#user_login').remove();
@@ -225,6 +288,28 @@ function login(){
                 $('#user_order_phone').val(data['user']['phone']);
                 $('#user_order_adress').val(data['user']['address']);
 
+                if(data['cart_diff']){
+                    $.ajax({
+                        type: 'POST',
+                        async: false,
+                        url: "/user/cartdiff",
+                        data: data['cart_diff'],
+                        //dataType: 'json',
+                        success: function (data) {
+                            var div = document.createElement('div');
+                            $(div).addClass('cart-diff');
+                            $(div).css('display', 'block');
+                            div.innerHTML = data;
+                            $(div).insertAfter('#userBox');
+                        },
+                        error: function (data) {
+                            console.log("cart_diff -> error");
+                            console.log(data);
+                        }
+                    })
+                }else{
+                    showMiniCart(data['cart']);
+                }
                 //$('#btnSaveOrder').show(); //ищем объект с идентификатором btnSaveOrder и выполняем метод show, те показываем его
             }else{ // если массив пуст = выдаем сообщение об ошибке
                 alert(data['message']);

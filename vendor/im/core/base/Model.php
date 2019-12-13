@@ -38,6 +38,14 @@ abstract class Model
     }
 
     /**
+     * Метод для сравнения данных
+     * Сравнивает две переменных и возвращает 0, 1 или -1
+     */
+    public function compare($a, $b){
+        return $a<=>$b;
+    }
+
+    /**
      * Метод для вставки данных в таблицу БД
      * @param string $table - таблица, в которую будут добавлены данные
      * @return mixed
@@ -220,12 +228,21 @@ abstract class Model
      */
     public function insertAndReturnId($table = '', $data){
         $table = $table ?: $this->table; //если передана таблица - берем ее, нет - берем указанную в модели таблицу
-
+        $columns = 'DESCRIBE '.$table;
+        $columnsArr = $this->pdo->query($columns, []);
+        $newData = [];
+        foreach($columnsArr as $arr){
+            foreach($data as $k=>$v){
+                if($arr['Field'] == $k){
+                    $newData[$k] = $v;
+                }
+            }
+        }
         $sql = 'INSERT INTO '. $table. '(`';
-        $sql .= implode("`, `", array_keys($data)).'`)';
+        $sql .= implode("`, `", array_keys($newData)).'`)';
         $sql .= ' VALUES (:';
-        $sql .= implode(", :", array_keys($data)).')';
-        return $this->pdo->lastId($sql, $data);
+        $sql .= implode(", :", array_keys($newData)).')';
+        return $this->pdo->lastId($sql, $newData);
     }
 
     /**
@@ -234,7 +251,7 @@ abstract class Model
      * @param string $field столбец, по которому понимаем, в какую строку вносить изменения, например id столбца
      * @param $str значение в столбце, которое говорит о том, где производить изменения
      */
-    public function updateTable($table, array$data, $field, $str){
+    public function updateTable($table, array $data, $field, $str){
         //debug($str);
         $sql = 'UPDATE '. $table . ' SET ';
         foreach($data as $k=>$v){

@@ -9,6 +9,7 @@ class CurrencyController extends AppController
 {
     public function changeAction(){
         $currency = !empty($_GET['curr']) ? $_GET['curr'] : null;
+
         if($currency){
             $model = new Currency();
             $curr = $model->findOne($currency, 'code')[0];

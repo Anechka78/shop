@@ -5,6 +5,7 @@
         <meta name="viewport" content="width=device-width, initial-scale=1, user-scaleble=no, maximum-scale=1" />
 
         <link rel="stylesheet" type="text/css" href="/public/css/mainPage.min.css">
+        <link rel="stylesheet" type="text/css" href="/public/css/cartPage.min.css">
         <link rel="stylesheet" type="text/css" href="/public/megamenu/css/style.css">
         <link rel="stylesheet" type="text/css" href="/public/megamenu/css/ionicons.min.css">
         <link rel="stylesheet" type="text/css" href="/public/css/slider.min.css">
@@ -45,3 +46,20 @@
 
 
         <?php //$this->getPart('layouts/footer');?>
+        <?php $curr = \im\core\App::$app->getProperty('currency'); //debug($curr);?>
+        <script type="text/javascript">
+            var path = '<?= PATH; ?>';
+            var course = <?= $curr['value'];?>;
+
+            <?php if($curr['symbol_left']): ?>
+            var symLeft = "<?= $curr['symbol_left'] ?>";
+            <?php else: ?>
+            var symLeft = "";
+            <?php endif; ?>
+
+            <?php if($curr['symbol_right']): ?>
+            var symRight = "<?= $curr['symbol_right'] ?>";
+            <?php else: ?>
+            var symRight = "";
+            <?php endif; ?>
+        </script>

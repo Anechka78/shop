@@ -15,11 +15,11 @@
     <div class="row">
         <div class="col-md-12">
             <div class="box">
-                <form action="<?=ADMIN;?>/product/add" method="post" data-toggle="validator">
+                <form action="<?=ADMIN;?>/product/add" method="post" data-toggle="validator" class="formData">
                     <div class="box-body">
                         <div class="form-group">
                             <label for="name">Наименование товара</label>
-                            <input type="text" name="name" class="form-control" id="name" placeholder="Наименование товара" value="<?php isset($_SESSION['form_data']['name']) ? h($_SESSION['form_data']['name']) : null; ?>" required>
+                            <input type="text" name="name" class="form-control" id="name" placeholder="Наименование товара" value="<?php echo isset($_SESSION['form_data']['name']) ? h($_SESSION['form_data']['name']) : null; ?>" required>
                         </div>
 
                         <div class="form-group">
@@ -47,39 +47,38 @@
                                 <?php endforeach;?>
                             </select>
                         </div>
-
                         <div class="form-group">
                             <label for="title">Тайтл (для СЕО)</label>
-                            <input type="text" name="title" class="form-control" id="title" placeholder="Заголовок в браузере" value="<?php isset($_SESSION['form_data']['title']) ? h($_SESSION['form_data']['title']) : null; ?>" required>
+                            <input type="text" name="title" class="form-control" id="title" placeholder="Заголовок в браузере" value="<?php echo isset($_SESSION['form_data']['title']) ? h($_SESSION['form_data']['title']) : null; ?>" required>
                         </div>
                         <div class="form-group">
                             <label for="description">Краткое описание (meta-description)</label>
-                            <input type="text" name="meta_desc" class="form-control" id="meta_desc" placeholder="Краткое описание" value="<?php isset($_SESSION['form_data']['meta_desc']) ? h($_SESSION['form_data']['meta_desc']) : null; ?>">
+                            <input type="text" name="meta_desc" class="form-control" id="meta_desc" placeholder="Краткое описание" value="<?php echo isset($_SESSION['form_data']['meta_desc']) ? h($_SESSION['form_data']['meta_desc']) : null; ?>">
                         </div>
 
                         <div class="form-group has-feedback">
                             <label for="content">Описание</label>
-                            <textarea name="description" id="editor1" cols="80" rows="10"><?php isset($_SESSION['form_data']['description']) ? $_SESSION['form_data']['description'] : null; ?></textarea>
+                            <textarea name="description" id="editor1" cols="80" rows="10"><?php echo isset($_SESSION['form_data']['description']) ? $_SESSION['form_data']['description'] : null; ?></textarea>
                         </div>
 
                         <div class="form-group">
                             <label for="price">Цена</label>
-                            <input type="text" name="price" class="form-control" id="price" placeholder="Цена (допускаются цифры и десятичная точка)" pattern="^[0-9.]{1,}$" value="<?php isset($_SESSION['form_data']['price']) ? h($_SESSION['form_data']['price']) : null; ?>" required data-error="Допускаются цифры и десятичная точка">
+                            <input type="text" name="price" class="form-control" id="price" placeholder="Цена (допускаются цифры и десятичная точка)" pattern="^[0-9.]{1,}$" value="<?php echo isset($_SESSION['form_data']['price']) ? h($_SESSION['form_data']['price']) : null; ?>" required data-error="Допускаются цифры и десятичная точка">
                             <div class="help-block with-errors"></div>
                         </div>
 
                         <div class="form-group">
                             <label for="old_price">Старая цена</label>
-                            <input type="text" name="old_price" class="form-control" id="old_price" placeholder="Старая цена (допускаются цифры и десятичная точка)" pattern="^[0-9.]{1,}$" value="<?php isset($_SESSION['form_data']['old_price']) ? h($_SESSION['form_data']['old_price']) : null; ?>" data-error="Допускаются цифры и десятичная точка">
+                            <input type="text" name="old_price" class="form-control" id="old_price" placeholder="Старая цена (допускаются цифры и десятичная точка)" pattern="^[0-9.]{1,}$" value="<?php echo isset($_SESSION['form_data']['old_price']) ? h($_SESSION['form_data']['old_price']) : null; ?>" data-error="Допускаются цифры и десятичная точка">
                         </div>
                         <div class="form-group">
                             <label for="price">Количество</label>
-                            <input type="text" name="count" class="form-control" id="count" placeholder="Количество (допускаются цифры)" pattern="^[0-9.]{1,}$" value="<?php isset($_SESSION['form_data']['count']) ? h($_SESSION['form_data']['count']) : null; ?>" data-error="Допускаются цифры">
+                            <input type="text" name="count" class="form-control" id="count" placeholder="Количество (допускаются цифры)" pattern="^[0-9.]{1,}$" value="<?php echo isset($_SESSION['form_data']['count']) ? h($_SESSION['form_data']['count']) : null; ?>" data-error="Допускаются цифры">
                         </div>
 
                         <div class="form-group">
                             <label for="old_price">Вес</label>
-                            <input type="text" name="weight" class="form-control" id="weight" placeholder="Вес товара (допускаются цифры и десятичная точка)" pattern="^[0-9.]{1,}$" value="<?php isset($_SESSION['form_data']['weight']) ? h($_SESSION['form_data']['weight']) : null; ?>" data-error="Допускаются цифры и десятичная точка">
+                            <input type="text" name="weight" class="form-control" id="weight" placeholder="Вес товара (допускаются цифры и десятичная точка)" pattern="^[0-9.]{1,}$" value="<?php echo isset($_SESSION['form_data']['weight']) ? h($_SESSION['form_data']['weight']) : null; ?>" data-error="Допускаются цифры и десятичная точка">
 
                         </div>
 
@@ -119,10 +118,9 @@
                         </div>
 
                         <div class="box-body">
-                            <div class="row">
-                                <div class="col-md-6 properties_dependences">
+                                <div class="properties_dependences">
                                     <div class="form-group">
-                                        <label for="parent_name">Зависимые характеристики (типа размер-цвет)</label>
+                                        <h3 class="box-title">Зависимые характеристики (типа размер-цвет)</h3>
                                         <select id="parent_name" name="parent_name" class="form-control" style="width: 100%;" tabindex="-1" aria-hidden="true">
                                             <option class="parent_name" value="0">Выберите главную характеристику</option>
                                             <?php foreach($mods as $k=>$v):?>
@@ -159,12 +157,34 @@
                                         <label for="pd_weight">Вес в кг. 1 шт. товара (если требуется)</label>
                                         <input type="text" name="pd_weight" class="form-control" id="pd_weight" placeholder="Вес" value="">
                                     </div>
-                                    <button type="button" class="btn btn-block btn-info" onclick="addPropertyDep();">Добавить</button>
+                                    <button type="button" class="btn btn-block btn-danger" onclick="addPropertyDep();">Добавить зависимую характеристику</button>
                                 </div>
+
+                            <div class="box-body" id="table-pd" style="display: none;">
+                                <label for="mods">Таблица зависимых характеристик</label>
+                                <table class="table table-bordered table-striped" id="mods">
+                                    <thead>
+                                    <tr>
+                                        <th class="col-xs-1">ID</th>
+                                        <th>Главная х-ка</th>
+                                        <th>Значение</th>
+                                        <th>Зависимая х-ка</th>
+                                        <th>Значение</th>
+                                        <th class="col-xs-1">Кол-во</th>
+                                        <th class="col-xs-1">Цена</th>
+                                        <th class="col-xs-1">Старая цена</th>
+                                        <th class="col-xs-1">Вес</th>
+                                        <th class="col-xs-1">Удалить</th>
+                                    </tr>
+                                    </thead>
+                                    <tbody id="properties_dependences_values">
+                                    </tbody>
+                                </table>
+                            </div>
                                 <!-- /.col -->
-                                <div class="col-md-6 properties_values">
+                                <div class="properties_values">
                                     <div class="form-group">
-                                        <label>Обычные характеристики</label>
+                                        <h3 class="box-title">Обычные характеристики</h3>
                                         <select id="prop_name" name="prop_name" class="form-control" style="width: 100%;" tabindex="-1" aria-hidden="true">
                                             <option value="0">Выберите простую характеристику</option>
                                             <?php foreach($mods as $k=>$v):?>
@@ -192,28 +212,32 @@
                                         <label for="pv_weight">Вес в кг. 1 шт. товара (если требуется)</label>
                                         <input type="text" name="pv_weight" class="form-control" id="pv_weight" placeholder="Вес" value="">
                                     </div>
-                                    <button type="button" class="btn btn-block btn-info" onclick="addPropertyVal();">Добавить</button>
+                                    <button type="button" class="btn btn-block btn-warning" onclick="addPropertyVal();">Добавить обычную характеристику</button>
                                 </div>
                                 <!-- /.col -->
-                            </div>
-                            <!-- /.row -->
                         </div>
-                        <div class="box-body">
-                            <div class="row">
-                                <div class="col-md-6" id="properties_dependences_values">
-                                </div>
-                                <div class="col-md-6" id="properties_values_values">
-                                </div>
-                                <!-- /.col -->
-                            </div>
-                            <!-- /.row -->
+                        <div class="box-body" id="table-pv" style="display: none;">
+                            <label for="mods">Таблица обычных характеристик</label>
+                            <table class="table table-bordered table-striped" id="pv">
+                                <thead>
+                                <tr>
+                                    <th class="col-xs-1">ID</th>
+                                    <th>Характеристика</th>
+                                    <th>Значение</th>
+                                    <th class="col-xs-1">Кол-во</th>
+                                    <th class="col-xs-1">Цена</th>
+                                    <th class="col-xs-1">Старая цена</th>
+                                    <th class="col-xs-1">Вес</th>
+                                    <th class="col-xs-1">Удалить</th>
+                                </tr>
+                                </thead>
+                                <tbody id="properties_values_values">
+                                </tbody>
+                            </table>
                         </div>
-
-
-<?php debug($_SESSION);?>
                     </div>
                     <div class="box-footer">
-                        <button type="submit" class="btn btn-success">Добавить</button>
+                        <button type="submit" class="btn btn-success">Добавить товар</button>
                     </div>
                 </form>
                 <?php if(isset($_SESSION['form_data'])) unset($_SESSION['form_data']); ?>

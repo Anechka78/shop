@@ -1,5 +1,6 @@
 <header class="headerTop" xmlns="http://www.w3.org/1999/html">
 	<div class="wrapper">
+		<?php //debug($_SESSION);?>
 		<div class="headerTop__wrap">
 			<div class="headerTop__contacts">
 				<span class="headerTop__contacts-email">
@@ -39,72 +40,71 @@
 					      <span class="close">&times;</span>
 					    </div>
 					    <div class="popup-body">		
-					    		<div class="popup-login__form">
-									<?php if(!empty($_SESSION['user'])):?>
-										<?php //debug($_SESSION['user']);?>
+							<div class="popup-login__form">
+								<?php if(!empty($_SESSION['user'])):?>
+									<?php //debug($_SESSION);?>
+									<!-- Если переменная существует - показываем пользователя, тк он уже залогинен-->
+									<div id="userBox">
+										<a href="/user/" id="userLink">Вы вошли как: <?= h($_SESSION['user']['login']); ?></a></br>
+										<a href="/user/logout" onclick="" class="btn">Выход</a>
+									</div>
+									<?php //debug($_SESSION);?>
+								<?php else: ?>
+								<!-- Если переменная не существует - показываем форму логина и регистрации-->
 
-										<!-- Если переменная существует - показываем пользователя, тк он уже залогинен-->
-										<div id="userBox">
-											<a href="/user/" id="userLink">Вы вошли как: <?= h($_SESSION['user']['login']); ?></a></br>
-											<a href="/user/logout" onclick="" class="btn">Выход</a>
+									<div id="userBox" class="hideme">
+										<a href="#" id="userLink"> Вы вошли как:</a></br>
+										<a href="/user/logout" onclick="" class="btn">Выход</a>
+									</div>
+									<!-- Следующая строчка нужна при оформлении заказа - сокрытие левого меню авторизации-->
+
+									<div id="loginBox">
+										<div class="popup__line">
+											<h2>У меня уже есть регистрация!</h2>
 										</div>
-									<?php else: ?>
-
-									<!-- Если переменная не существует - показываем форму логина и регистрации-->
-
-										<div id="userBox" class="hideme">
-											<a href="#" id="userLink"> Вы вошли как:</a></br>
-											<a href="/user/logout" onclick="" class="btn">Выход</a>
+										<div class="popup__input">
+											<span class="popup__input_text">Логин (e-mail): </span>
+											<input type="text" id="loginEmail" name="loginEmail" value="" class="enter__imput"/>
 										</div>
-										<!-- Следующая строчка нужна при оформлении заказа - сокрытие левого меню авторизации-->
+										<div class="popup__input">
+											<span class="popup__input_text">Пароль: </span>
+											<input type="password" id="loginPwd" name="loginPwd" value="" class="enter__imput"/>
+										</div>
+										<input type="button" class="btn" onclick="login();" value="Войти и заказать"/>
+									</div>
+									<div id="registerBox">
+										<!--<div class="menuCaption showHidden" onclick="showRegisterBox();">Регистрация</div>-->
+										<div class="popup__line">
+											<h2>Я на сайте впервые / нет регистрации</h2>
+										</div>
 
-										<div id="loginBox">
-											<div class="popup__line">
-								    			<h2>У меня уже есть регистрация!</h2>
-								    		</div>
+										<div id="registerBoxHidden">
 											<div class="popup__input">
-												<span class="popup__input_text">Логин (e-mail): </span>
-												<input type="text" id="loginEmail" name="loginEmail" value="" class="enter__imput"/>
+												<span class="popup__input_text">E-mail (login): </span>
+												<input type="text" id="email" name="email" value="" class="enter__imput"/>
+												<span class="error-info" style="display: none;" id="error-email"></span>
+												<span class="success-info" style="display: none;" id="success-email"></span>
 											</div>
 											<div class="popup__input">
-												<span class="popup__input_text">Пароль: </span>
-												<input type="password" id="loginPwd" name="loginPwd" value="" class="enter__imput"/>
+												<span class="popup__input_text" >Пароль: </span>
+												<input type="password" id="pwd1" name="pwd1" value="" class="enter__imput" />
+												<div class="success-info" id="pass-info">Длина пароля от 6-10 символов, <br>обязательна 1 заглавная буква A-Z</div>
+												<span class="error-info" style="display: none;" id="error-pwd1"></span>
+												<span class="success-info" style="display: none;" id="success-pwd1"></span>
 											</div>
-											<input type="button" class="btn" onclick="login();" value="Войти и заказать"/>
-										</div>
-										<div id="registerBox">
-											<!--<div class="menuCaption showHidden" onclick="showRegisterBox();">Регистрация</div>-->
-											<div class="popup__line">
-								    			<h2>Я на сайте впервые / нет регистрации</h2>
-								    		</div>
+											<div class="popup__input">
+												<span class="popup__input_text">Повторите пароль: </span>
+												<input type="password" id="pwd2" name="pwd2" value="" class="enter__imput"/>
+												<span class="error-info" style="display: none;" id="error-pwd2"></span>
+												<span class="success-info" style="display: none;" id="success-pwd2"></span>
+											</div>
+											<input type="button" id="signup_btn" class="btn" onclick="registerNewUser();" value="Зарегистрироваться" disabled/></br>
 
-											<div id="registerBoxHidden">
-												<div class="popup__input">
-													<span class="popup__input_text">E-mail (login): </span>
-													<input type="text" id="email" name="email" value="" class="enter__imput"/>
-													<span class="error-info" style="display: none;" id="error-email"></span>
-													<span class="success-info" style="display: none;" id="success-email"></span>
-												</div>
-												<div class="popup__input">
-													<span class="popup__input_text" >Пароль: </span>
-													<input type="password" id="pwd1" name="pwd1" value="" class="enter__imput" />
-													<div class="success-info" id="pass-info">Длина пароля от 6-10 символов, <br>обязательна 1 заглавная буква A-Z</div>
-													<span class="error-info" style="display: none;" id="error-pwd1"></span>
-													<span class="success-info" style="display: none;" id="success-pwd1"></span>
-												</div>
-												<div class="popup__input">
-													<span class="popup__input_text">Повторите пароль: </span>
-													<input type="password" id="pwd2" name="pwd2" value="" class="enter__imput"/>
-													<span class="error-info" style="display: none;" id="error-pwd2"></span>
-													<span class="success-info" style="display: none;" id="success-pwd2"></span>
-												</div>
-												<input type="button" id="signup_btn" class="btn" onclick="registerNewUser();" value="Зарегистрироваться" disabled/></br>
+										</div><!--registerBoxHidden-->
+									</div><!--registerBox-->
+								<?php endif; ?>
 
-											</div><!--registerBoxHidden-->
-										</div><!--registerBox-->
-									<?php endif; ?>
-
-					    		</div>	<!--popup-login__form-->			    	
+							</div>	<!--popup-login__form-->
 					    	<div style="clear: both;"></div>
 
 					    </div><!--popup-body-->

@@ -62,17 +62,41 @@ class Product extends Model{
         return $properties;
     }
 
-    public function addProductDependenciesInDb($id){
+    public function checkProductParams($param, $elem, $message){
+        if($param == '0' || $param == '') {
+            if (isset($_SESSION['pd'])) {
+                foreach ($_SESSION['pd'] as $k => $v) {
+                    if ($v[$elem] == '0' || $v[$elem] == '') {
+                        $_SESSION['error'] = $message;
+                        redirect();
+                    }
+                }
+            } elseif(!isset($_SESSION['pd']) && isset($_SESSION['pv'])){
+                foreach ($_SESSION['pv'] as $k => $v) {
+                    if ($v[$elem] == '0' || $v[$elem] == '') {
+                        $_SESSION['error'] = $message;
+                        redirect();
+                    }
+                }
+            }elseif(!isset($_SESSION['pd']) && !isset($_SESSION['pv'])){
+                $_SESSION['error'] = $message;
+                redirect();
+            }
+        }
+    }
+
+    public function addProductDependenciesInDb($id, $category_id){
         $flag_count = false;
         if(!empty($_SESSION['pd'])) {
             $sql_part = '';
+            $filters = [];
             foreach ($_SESSION['pd'] as $k => $v) {
                 if($v['count'] > 0){
                     $flag_count = true;
                 }
                 $sql_part .= "({$v['parent_property_name']}, {$v['parent_property_names']},
                             {$v['child_property_name']}, {$v['child_property_names']},
-                            {$v['count']}, {$v['price']}, {$v['old_price']}, {$v['weight']}, $id),";
+                            {$v['count']}, {$v['price']}, {$v['old_price']}, {$v['weight']}, $id, $category_id),";
 
                 if(isset($_SESSION['pv'])){
                     foreach($_SESSION['pv'] as $i=>$pv){
@@ -81,13 +105,45 @@ class Product extends Model{
                         }
                     }
                 }
+                if(!in_array($v['parent_property_names'], $filters)){
+                    $filters[$k][] = $v['parent_property_names'];
+                }
+                if(!in_array($v['child_property_names'], $filters)){
+                    $filters[$k][] = $v['child_property_names'];
+                }
+                if(isset($_SESSION['pv'])){
+                    foreach($_SESSION['pv'] as $ind=>$val){
+                        if(!in_array($val['property_value_value'], $filters)){
+                            $filters[$k][] = $val['property_value_value'];
+                        }
+                    }
+                }
             }
+
+            foreach($filters as $f_key=>$f_val){
+                $filter_sql = '';
+                $filter_sql .= "("."`product_id`, "."`".rtrim(implode('`,`', $f_val), ',')."`".")";
+                $filter_table = 'filter_'.$category_id;
+                $in = "'$id', ".join(',', array_fill(0, count($f_val), "'1'"));
+                foreach($f_val as $filter_id=>$filter_val){
+                    $sql_for_table = "SELECT count(COLUMN_NAME) FROM INFORMATION_SCHEMA.COLUMNS
+                                 WHERE TABLE_SCHEMA = 'nuha' AND TABLE_NAME = '".$filter_table."' AND COLUMN_NAME=?";
+                    $res = $this->findBySql($sql_for_table, [$filter_val])[0];
+
+                    if($res['count(COLUMN_NAME)'] !== 1){
+                        $sql_in_table = "ALTER TABLE `".$filter_table."` ADD `{$filter_val}` enum('0', '1') NOT NULL DEFAULT '0'";
+                        $this->findBySql($sql_in_table, []);
+                    }
+                }
+                $sql_prop = "INSERT INTO `".$filter_table."` {$filter_sql} VALUES ({$in})";
+                $this->findBySql($sql_prop, []);
+            }
+
         $sql_part = rtrim($sql_part, ',');
-            //var_dump($flag_count);
 
         $sql = "INSERT INTO `properties_dependences`
               (`parent_property_name`, `parent_property_names`, `child_property_name`, `child_property_names`,
-               `count`, `price`, `old_price`, `weight`, `product_id`) VALUES {$sql_part}";
+               `count`, `price`, `old_price`, `weight`, `product_id`, `category_id`) VALUES {$sql_part}";
         $this->findBySql($sql, []);
         unset($_SESSION['pd']);
         }
@@ -107,8 +163,34 @@ class Product extends Model{
         }
     }
 
-    public function addProductValuesInDb($id){
+    public function addProductValuesInDb($id, $category_id){
         if(!empty($_SESSION['pv'])){
+            $filter_table = 'filter_'.$category_id;
+            $result = $this->selectCountFromTable($filter_table, 'product_id', $id);
+            $filters = [];
+            if($result == 0){
+                foreach($_SESSION['pv'] as $k => $v) {
+                    $filters[] = $v['property_value_value'];
+                }
+                $filter_sql = '';
+                $filter_sql .= "("."`product_id`, "."`".rtrim(implode('`,`', $filters), ',')."`".")";
+                $filter_table = 'filter_'.$category_id;
+                $in = "'$id', ".join(',', array_fill(0, count($filters), "'1'"));
+                foreach($filters as $filter_id=>$filter_val){
+                    $sql_for_table = "SELECT count(COLUMN_NAME) FROM INFORMATION_SCHEMA.COLUMNS
+                                 WHERE TABLE_SCHEMA = 'nuha' AND TABLE_NAME = '".$filter_table."' AND COLUMN_NAME=?";
+                    $res = $this->findBySql($sql_for_table, [$filter_val])[0];
+
+                    if($res['count(COLUMN_NAME)'] !== 1){
+                        $sql_in_table = "ALTER TABLE `".$filter_table."` ADD `{$filter_val}` enum('0', '1') NOT NULL DEFAULT '0'";
+                        $this->findBySql($sql_in_table, []);
+                    }
+                }
+                $sql_prop = "INSERT INTO `".$filter_table."` {$filter_sql} VALUES ({$in})";
+                //var_dump($sql_prop); die();
+                $this->findBySql($sql_prop, []);
+            }
+
             $sql_part = '';
             foreach ($_SESSION['pv'] as $k => $v) {
                 if(empty($v['count'])){
@@ -125,13 +207,13 @@ class Product extends Model{
                 }
 
                 $sql_part .= "({$v['property_value_value']},
-                            {$v['count']}, {$v['price']}, {$v['old_price']}, {$v['weight']}, $id),";
+                            {$v['count']}, {$v['price']}, {$v['old_price']}, {$v['weight']}, $id, $category_id),";
             }
             $sql_part = rtrim($sql_part, ',');
            // var_dump($sql_part); die();
 
             $sql = "INSERT INTO `product_properties_values`
-              (`prop_val_id`, `count`, `price`, `old_price`, `weight`, `product_id`) VALUES {$sql_part}";
+              (`prop_val_id`, `count`, `price`, `old_price`, `weight`, `product_id`, `category_id`) VALUES {$sql_part}";
             $this->findBySql($sql, []);
             unset($_SESSION['pv']);
         }
@@ -145,7 +227,6 @@ class Product extends Model{
     }
 
     public function editRelatedProducts($id, $related){
-        //debug($data); die();
         $sql = "SELECT `related_id` FROM `related_products` WHERE `product_id` = ?";
         $related_products = $this->findBySql($sql, [$id]);
 
@@ -163,7 +244,6 @@ class Product extends Model{
                 $sql_part .= "($id, $v),";
             }
             $sql_part = rtrim($sql_part, ',');
-            //debug($sql_part); die();
             $sql = "INSERT INTO `related_products` (`product_id`, `related_id`) VALUES {$sql_part}";
             $this->findBySql($sql, []);
             return;
@@ -288,6 +368,37 @@ class Product extends Model{
         }
         imagedestroy($newImg);
     }
+
+
+    //Вносим данные о продукте в таблицу jsonproduct
+    public function jsonproduct($id, $alias, $product){
+        $sql = "INSERT  INTO `jsonproduct` (`product_id`, `product_alias`,`product_json`) VALUES (
+                 ?, ?, ?)";
+        $jsonprod = $this->findBySql($sql, [$id, $alias, $product]);
+    }
+    //Получаем данные о продукте из таблицы jsonproduct
+    public function getProductByJson($id = 'product_alias', $alias){
+        $sql = "SELECT pr.*, cat.name as cat_name, cat.alias as cat_alias, vn.name as vn_name FROM `jsonproduct` AS pr
+                LEFT JOIN `categories` AS `cat` ON cat.id = CAST(JSON_EXTRACT(`product_json`, '$.category_id') AS SIGNED)
+                LEFT JOIN `vendor` AS `vn` ON CAST(product_json->'$.vendor' AS SIGNED) = vn.id
+                WHERE {$id} = ?";
+        $product = $this->findBySql($sql, [$alias])[0];
+//var_dump($product); die();
+        return $product;
+    }
+
+    /**
+     * Вносим данные о продукте в таблицу products_search для поиска по ним
+     * @param $id - идентификатор продукта из таблицы products
+     * @param $name - название продукта
+     * @param $description - описание продукта
+     */
+    public function setProductToSearch($id, $name, $description){
+        $sql = "INSERT  INTO `products_search` (`product_id`, `product_name`,`product_description`) VALUES (
+                 ?, ?, ?)";
+        $result = $this->findBySql($sql, [$id, $name, $description]);
+    }
+
 
 
 }

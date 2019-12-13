@@ -71,14 +71,14 @@ class CategoryController extends AppController
                 $_SESSION['error'] = "<ul>$errors</ul>";
                 redirect();
             }
+
+            //Создаем алиас на основе названия категории
+            $data['alias'] = Model::str2url($name);
             //Записываем категорию в БД и получаем id записи
             $id = $category->insertAndReturnId('categories', $data);
-            $model = new Model();
-            $alias = [];
-            //Создаем алиас на основе названия категории
-            $alias['alias'] = $model->createAlias('categories', 'alias', $name, $id);
-            //Заносим транслитирированный алиса в БД
-            $res = $model->updateTable('categories', $alias, 'id', $id);
+            //Создаем новую таблицу для фильтров
+            $res = $category->createFilterCategory($id);
+
             if($res){
                 $success = '<li class="success">Категория добавлена успешно</li>';
                 $_SESSION['success'] = "<ul>$success</ul>";
@@ -108,20 +108,14 @@ class CategoryController extends AppController
                 }
             }
             $data = $_POST;
+            //Создаем алиас на основе названия категории
+            $data['alias'] = Model::str2url($data['name']);
             $model = new Model();
             if($model->updateTable('categories', $data, 'id', $id)){
-                $alias = [];
-                //Создаем алиас на основе названия категории
-                $alias['alias'] = $model->createAlias('categories', 'alias', $data['name'], $id);
-                //Заносим транслитирированный алиса в БД
-                $res = $model->updateTable('categories', $alias, 'id', $id);
-                if($res){
-                    $success = '<li class="success">Изменения успешно внесены</li>';
-                    $_SESSION['success'] = "<ul>$success</ul>";
-                }
+                $success = '<li class="success">Изменения успешно внесены</li>';
+                $_SESSION['success'] = "<ul>$success</ul>";
                 redirect();
             }
-
         }
         $id = $this->getRequestID();
         $model = new Category();

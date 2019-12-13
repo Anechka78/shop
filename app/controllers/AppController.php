@@ -18,6 +18,7 @@ class AppController extends Controller
     public function __construct($route){
         parent::__construct($route);
         $currs = Currency::getCurrencies();
+        //debug($route);
 
         $code = [];
         foreach($currs as $k => $v){

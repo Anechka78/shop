@@ -11,36 +11,36 @@
                 <div class="cart-product">
                     <?php foreach($itemsArr as $id => $item):?>
                         <?php //debug($item); ?>
-                    <div class="cart-product__item" data-id="<?= $id; ?>" data-productId="<?= $item['product']['id']; ?>" id="itemInfo_<?= $id; ?>">
+                    <div class="cart-product__item" data-id="<?= $id; ?>" data-productId="<?= $item['id']; ?>" id="itemInfo_<?= $id; ?>">
                         <div class="cart-product__name" data-id="<?= $id; ?>">
-                            <a href="/product/<?= $item['product']['alias']; ?>"><?= $item['product']['name']; ?></a>
+                            <a href="/product/<?= $item['alias']; ?>"><?= $item['name']; ?></a>
                             <a class="cart-toggle itemToDel" id="itemToDel_<?= $id; ?>" href="#" data-proc="delete" alt="Удалить из корзины">Удалить</a>
 
                         </div>
 
                         <div class="cart-product__info">
-                            <div class="cart-product__img" data-image="<?= $item['product']['image']; ?>"><img src="/images/products/<?= $item['product']['image']; ?>" style="width: 50px; margin-right: 10px;" />
+                            <div class="cart-product__img" data-image="<?= $item['image']; ?>"><img src="/images/products/<?= $item['image']; ?>" style="width: 50px; margin-right: 10px;" />
                         </div>
                         <div class="cart-product__count">
-                            <?php if(isset($item['product']['prDepArr'])):?>
-                                <span><?= $item['product']['prDepArr']['p_name'].': ';?> </span><span class="cart-product__size"><?= $item['product']['prDepArr']['pv_name'];?></span>
-                                <span><?= $item['product']['prDepArr']['ch_name'].': ';?>  </span><span class="cart-product__color"><?= $item['product']['prDepArr']['ch_val'];?></span><br>
+                            <?php if(isset($item['prDepArr'])):?>
+                                <span><?= $item['prDepArr']['p_name'].': ';?> </span><span class="cart-product__size"><?= $item['prDepArr']['pv_name'];?></span>
+                                <span><?= $item['prDepArr']['ch_name'].': ';?>  </span><span class="cart-product__color"><?= $item['prDepArr']['ch_val'];?></span><br>
                             <?php endif;?>
 
-                            <?php if(isset($item['product']['prValArr'])):?>
-                                <?php foreach($item['product']['prValArr'] as $key => $mod):?>
+                            <?php if(isset($item['prValArr'])):?>
+                                <?php foreach($item['prValArr'] as $key => $mod):?>
                                 <span><?= $mod['p_name'].': ';?> </span><span class="cart-product__size"><?= $mod['pv_name'];?></span><br>
                                 <?php endforeach;?>
                             <?php endif;?>
 
                             <span class="product-count">Количество:</span>
                             <span class="minus btn" data-proc="minus" id="minus_<?= $id; ?>">-</span>
-                            <input name="itemCnt_<?= $id; ?>" class="itemCnt" id="itemCnt_<?= $id; ?>" type="text" value="<?= $item['qty'] ?>" data-count="<?= $item['count'] ?>" data-weight="<?= $item['weight'] ?>">
+                            <input name="itemCnt_<?= $id; ?>" class="itemCnt" id="itemCnt_<?= $id; ?>" type="text" value="<?= $item['qty'] ?>" data-count="<?= $item['itemCount'] ?>" data-weight="<?= $item['itemWeight'] ?>">
                             <span class="plus btn" data-proc="plus" id="plus_<?= $id; ?>">+</span>
 
-                            <span class="itemPrice" id="itemPrice_<?= $id; ?>" value="<?= $item['price'];?>" style="display: none;"><?= $currency['symbol_left'];?><?= $item['price'];?><?= $currency['symbol_right'];?></span>
+                            <span class="itemPrice" id="itemPrice_<?= $id; ?>" value="<?= $item['itemPrice'];?>" style="display: none;"><?= $currency['symbol_left'];?><?= $item['itemPrice'];?><?= $currency['symbol_right'];?></span>
                             <span class="product-summa">
-                                <span class="product-summ" id="itemRealPrice_<?= $id; ?>"><?= $currency['symbol_left'];?><span><?= $item['qty'] * $item['price'] * $currency['value'];?></span><?= $currency['symbol_right'];?></span>
+                                <span class="product-summ" id="itemRealPrice_<?= $id; ?>"><?= $currency['symbol_left'];?><span><?= $item['qty'] * $item['itemPrice'] * $currency['value'];?></span><?= $currency['symbol_right'];?></span>
 
                             </span>
                         </div>

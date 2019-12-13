@@ -28,7 +28,7 @@ class Breadcrumbs
         $breadcrumbs = [];
         foreach($cats as $k => $v){
             if(isset($cats[$id])){
-                $breadcrumbs[$cats[$id][$ident]] = $cats[$id]['title'];
+                $breadcrumbs[$cats[$id][$ident]] = $cats[$id]['name'];
                 $id = $cats[$id]['parent_id'];
             }else break;
         }

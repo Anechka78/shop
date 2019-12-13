@@ -9,7 +9,7 @@
         <li class="active">Добавление пользователя</li>
     </ol>
 </section>
-<?php debug($_SESSION['error']);?>
+<?php //debug($_SESSION['error']);?>
 <!-- Main content -->
 <section class="content">
     <div class="row">

@@ -116,30 +116,33 @@ $(".select2").select2({
     }
 });
 
-var buttonMulti = $("#multi"),
-    file;
+if($('div').is('#multi')){
+    var buttonMulti = $("#multi"),
+        file;
+}
+if(buttonMulti){
+    new AjaxUpload(buttonMulti, {
+        action: adminpath + buttonMulti.data('url') + "?upload=1",
+        data: {name: buttonMulti.data('name')},
+        name: buttonMulti.data('name'),
+        onSubmit: function(file, ext){
+            if (! (ext && /^(jpg|png|jpeg|gif)$/i.test(ext))){
+                alert('Ошибка! Разрешены только картинки');
+                return false;
+            }
+            buttonMulti.closest('.file-upload').find('.overlay').css({'display':'block'});
 
-new AjaxUpload(buttonMulti, {
-    action: adminpath + buttonMulti.data('url') + "?upload=1",
-    data: {name: buttonMulti.data('name')},
-    name: buttonMulti.data('name'),
-    onSubmit: function(file, ext){
-        if (! (ext && /^(jpg|png|jpeg|gif)$/i.test(ext))){
-            alert('Ошибка! Разрешены только картинки');
-            return false;
+        },
+        onComplete: function(file, response){
+            setTimeout(function(){
+                buttonMulti.closest('.file-upload').find('.overlay').css({'display':'none'});
+
+                response = JSON.parse(response);
+                $('.' + buttonMulti.data('name')).append('<img src="/images/products/' + response.file + '" style="max-height: 150px;">');
+            }, 500);
         }
-        buttonMulti.closest('.file-upload').find('.overlay').css({'display':'block'});
-
-    },
-    onComplete: function(file, response){
-        setTimeout(function(){
-            buttonMulti.closest('.file-upload').find('.overlay').css({'display':'none'});
-
-            response = JSON.parse(response);
-            $('.' + buttonMulti.data('name')).append('<img src="/images/products/' + response.file + '" style="max-height: 150px;">');
-        }, 500);
-    }
-});
+    });
+}
 
 /**
  * Изменение выбранной родительской характеристики
@@ -257,19 +260,33 @@ function addPropertyVal(){
                     document.getElementById('pv_weight').value = "";
                 }
 
+
+                document.getElementById("table-pv").style.display="block";
                 var div = $('#properties_values_values')[0];
-                var p = document.createElement('p');
-                p.setAttribute( "id", 'pv-'+data['key'] );
-                p.innerHTML = "Добавлена характеристика: "+data['pv']['property_name'] +': '
-                    +data['pv']['property_value'] +
-                    ', Кол-во: '+data['pv']['count'] + ', Цена: ' +data['pv']['price'] + ', Старая цена: '+data['pv']['old_price'] +
-                    ', Вес: ' + data['pv']['weight'];
-                div.appendChild(p);
-                var foo = document.getElementById('pv-'+data['key']);
-                var span = document.createElement('span');
-                span.setAttribute( "id", data['key'] );
-                span.innerHTML = '<i id="'+data['key']+'" class="fa fa-fw fa-times" title ="Удалить характеристику" style="margin-left: 5px; color: red; cursor: pointer;"></i>';
-                foo.appendChild(span);
+                //console.log(div); die();
+
+                var tr = document.createElement('tr');
+                tr.setAttribute( "id", 'pv-'+data['key'] );
+                tr.innerHTML = '<td></td><td>'+data['pv']['property_name']+'</td><td>'+data['pv']['property_value']+'</td><td>'+data['pv']['count']+'</td><td>'+data['pv']['price']+'</td><td>'+data['pv']['old_price']+'</td><td>'+data['pv']['weight']+'</td><td><i id="'+data['key']+'" class="fa fa-fw fa-times" title ="Удалить характеристику" style="margin-left: 5px; color: red; cursor: pointer;"></i></td>';
+                div.appendChild(tr);
+
+
+
+
+
+                //var div = $('#properties_values_values')[0];
+                //var p = document.createElement('p');
+                //p.setAttribute( "id", 'pv-'+data['key'] );
+                //p.innerHTML = "Добавлена характеристика: "+data['pv']['property_name'] +': '
+                //    +data['pv']['property_value'] +
+                //    ', Кол-во: '+data['pv']['count'] + ', Цена: ' +data['pv']['price'] + ', Старая цена: '+data['pv']['old_price'] +
+                //    ', Вес: ' + data['pv']['weight'];
+                //div.appendChild(p);
+                //var foo = document.getElementById('pv-'+data['key']);
+                //var span = document.createElement('span');
+                //span.setAttribute( "id", data['key'] );
+                //span.innerHTML = '<i id="'+data['key']+'" class="fa fa-fw fa-times" title ="Удалить характеристику" style="margin-left: 5px; color: red; cursor: pointer;"></i>';
+                //foo.appendChild(span);
 
             }else{
                 console.log(data);
@@ -318,19 +335,28 @@ function addPropertyDep(){
                  document.getElementById('pd_oldprice').value = "";
                  document.getElementById('pd_weight').value = "";
 
+                 document.getElementById("table-pd").style.display="block";
                  var div = $('#properties_dependences_values')[0];
-                 var p = document.createElement('p');
-                 p.setAttribute( "id", 'pd-'+data['key'] );
-                 p.innerHTML = "Добавлена характеристика: "+data['pd_val']['parent_name_value'] +': '
-                                +data['pd_val']['parent_names_value'] + ', '+data['pd_val']['child_name_value']+ ': ' + data['pd_val']['child_names_value'] +
-                                ', Кол-во: '+data['pd']['count'] + ', Цена: ' +data['pd']['price'] + ', Старая цена: '+data['pd']['old_price'] +
-                                ', Вес: ' + data['pd']['weight'];
-                 div.appendChild(p);
-                 var foo = document.getElementById('pd-'+data['key']);
-                 var span = document.createElement('span');
-                 span.setAttribute( "id", data['key'] );
-                 span.innerHTML = '<i id="'+data['key']+'" class="fa fa-fw fa-times" title ="Удалить характеристику" style="margin-left: 5px; color: red; cursor: pointer;"></i>';
-                 foo.appendChild(span);
+                 //console.log(div); die();
+
+                 var tr = document.createElement('tr');
+                 tr.setAttribute( "id", 'pd-'+data['key'] );
+                 tr.innerHTML = '<td></td><td>'+data['pd_val']['parent_name_value']+'</td><td>'+data['pd_val']['parent_names_value']+'</td><td>'+data['pd_val']['child_name_value']+'</td><td>'+data['pd_val']['child_names_value']+'</td><td>'+data['pd']['count']+'</td><td>'+data['pd']['price']+'</td><td>'+data['pd']['old_price']+'</td><td>'+data['pd']['weight']+'</td><td><i id="'+data['key']+'" class="fa fa-fw fa-times" title ="Удалить характеристику" style="margin-left: 5px; color: red; cursor: pointer;"></i></td>';
+                 div.appendChild(tr);
+
+
+                 //var p = document.createElement('p');
+                 //p.setAttribute( "id", 'pd-'+data['key'] );
+                 //p.innerHTML = "Добавлена характеристика: "+data['pd_val']['parent_name_value'] +': '
+                 //               +data['pd_val']['parent_names_value'] + ', '+data['pd_val']['child_name_value']+ ': ' + data['pd_val']['child_names_value'] +
+                 //               ', Кол-во: '+data['pd']['count'] + ', Цена: ' +data['pd']['price'] + ', Старая цена: '+data['pd']['old_price'] +
+                 //               ', Вес: ' + data['pd']['weight'];
+                 //div.appendChild(p);
+                 //var foo = document.getElementById('pd-'+data['key']);
+                 //var span = document.createElement('span');
+                 //span.setAttribute( "id", data['key'] );
+                 //span.innerHTML = '<i id="'+data['key']+'" class="fa fa-fw fa-times" title ="Удалить характеристику" style="margin-left: 5px; color: red; cursor: pointer;"></i>';
+                 //foo.appendChild(span);
 
                  $("#prop_name option").each(function(){
                      var value = $(this).val();

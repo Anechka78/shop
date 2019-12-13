@@ -12,13 +12,14 @@ use im\core\Validator;
 
 
 class CartController extends AppController{
-    /**
-     * Добавление товара в Корзину
-     */
+/**
+ * Добавление товара в Корзину
+ */
 
     public function addAction(){
         $id = !empty($_POST['id']) ? trim((int)$_POST['id']) : null;
         $ID = $id;
+
         //зависимых характеристик родитель-ребенок может быть всего 1 и это - id характеристики из таблицы properties_dependences
         if (!empty($_POST['pd_id'])){
             $pd_id = trim($_POST['pd_id'][0]);
@@ -36,13 +37,14 @@ class CartController extends AppController{
         // Формируем Товар для корзины в сессии или БД
         if(!isset($pp_id) && !isset($pd_id)){
             $product = $model->getOneProduct($id);
-        }elseif(!isset($pp_id)){
-            $product = $model->getOneProduct($id, $pd_id);
+        }elseif(!isset($pp_id) || $pp_id==[]){
+            $product = $model->getOneProduct($id, [], $pd_id);
         }elseif(!isset($pd_id)){
             $product = $model->getOneProduct($id, $pp_id);
         }else{
             $product = $model->getOneProduct($id, $pp_id, $pd_id);
         }
+        //debug($ID); die();
        $user = User::isUser();
 
         //Если найден пользователь, который авторизован - кладем товар в таблицу UserCart БД и корзину достаем из БД
@@ -57,28 +59,26 @@ class CartController extends AppController{
             if(!$user_cart){
                 $resData['error'] = 1;
                 $resData['message'] = 'При добавлении товара произошла ошибка. Возможно, такого кол-ва нет на складе.';
+                die(json_encode($resData));
             }else{
-               $cart = $model->getUsersCart($user_id);
+               $addToSession = $model->addToUsersSessionCart($product['itemPrice'], $product['itemWeight']);
             }
 
-            if(!$cart){
+            if(!$addToSession){
                 $resData['error'] = 1;
                 $resData['message'] = 'Чего-то не то произошло';
+                die(json_encode($resData));
             }else{
-                $_SESSION['user']['cart']['totalsum'] = $cart['totalsum'];
-                $_SESSION['user']['cart']['totalqty'] = $cart['totalqty'];
                 $resData['success'] = 1; // записываем в результирующие данные успех операции
                 $resData['message'] = 'Товар успешно добавлен в Корзину';
-                $resData['cart'] = $cart;
+                $resData['cart'] = $addToSession;
             }
             die(json_encode($resData));
 
         }else{
             $cart = new Cart();
-            //debug($cart); die();
-            $cartInfo = $cart->addToCart($product, $qty = 1);
-            //debug($cartInfo); die();
-
+            $cartInfo = $cart->addToCart($product, $qty = 1, $ID);
+//debug($cartInfo); die();
             $resData = array();
             if(!$cartInfo){
                 $resData['error'] = 1;
@@ -102,58 +102,21 @@ class CartController extends AppController{
         $user = User::isUser();
         if($user){
             $user_id = $user['id'];
-            $cart = $model->findEqual($user_id, 'user_id', 'users_cart');
-            //debug($cart); die();
-            $products=[];
-
-            //заполняем массив продуктов
-            foreach($cart as $key=>$item){
-                $id = $item['product_id'];
-                $item['json_product'] = json_decode($item['json_product'], true);
-                $products[$id]['qty'] = $item['count'];
-                $products[$id]['product'] = $item['json_product'];
-                $products[$id]['price'] = $model->getValueFromArrays($products[$id]['product'], 'price');
-                $products[$id]['weight'] = Cart::getValueFromArray($products[$id]['product'], 'weight');
-                $products[$id]['count'] = $model->getValueFromArrays($products[$id]['product'], 'count');
-                $products[$id]['summ'] = $products[$id]['price'] * $products[$id]['qty'];
-            }
-debug($products); die();
-            //Проверяем, есть ли товар в наличии, если нет - удаляем из корзины
-            //Если же кол-во товара меньше, чем заказанное - делаем кол-во товара в корзине равным тому, что в наличии
-            foreach($products as $id=>$pr) {
-                if($pr['count'] == 0) {
-                    $model->removeFromUsersCart($user_id, $id);
-                    unset($products[$id]);
-                }else if($pr['qty'] > $pr['count']){
-                    $products[$id]['qty'] = $products[$id]['count'];
-                }
-            }
-            $totalWeight =  array_sum(array_column($products, 'weight'));
-            $totalSum = array_sum(array_column($products, 'summ'));
-            $totalQty = array_sum(array_column($products, 'qty'));
-            $cart = [];
-            $cart['products'] = $products;
-            $cart['totalsum'] = $totalSum;
-            $cart['totalqty'] = $totalQty;
-            $cart['totalweight'] = $totalWeight;
-
-            $_SESSION['user']['cart']['totalsum'] = $totalSum;
-            $_SESSION['user']['cart']['totalqty'] = $totalQty;
+            $cart = $model->getUsersCart($user_id);
 
             $currency = isset($_SESSION['cart.currency']) ? $_SESSION['cart.currency'] : $_SESSION['cart.currency'] = App::$app->getProperty('currency');
 
             $itemsArr = $cart['products'];
-
             $qty = $cart['totalqty'];
             $sum = $cart['totalsum'];
             $weight = $cart['totalweight'];
-//debug($cart); die();
+            //debug($sum); die();
+
             //Передаем данные в вид
             $this->set(compact('itemsArr', 'currency', 'qty', 'sum', 'weight'));
 
         }else{
             $cart = $model->getCart();
-            //debug($cart); die();
             $itemsArr = $cart['itemsArr'];
             $currency = $cart['currency'];
 
@@ -164,8 +127,6 @@ debug($products); die();
             //Передаем данные в вид
             $this->set(compact('itemsArr', 'currency', 'qty', 'sum', 'weight'));
         }
-
-
     }
 /*
  * Изменение кол-ва товаров в корзине
@@ -173,20 +134,23 @@ debug($products); die();
     public function changeAction(){
         $id = !empty($_POST['id']) ? trim($_POST['id']) : null;
         $qty = !empty($_POST['qty']) ? trim((int)$_POST['qty']) : 0;
-
+//debug($_SESSION); die();
         $model = new Cart();
 
         $user = User::isUser();
         //Если пользователь зарегистрирован и меняет свою корзину
+        //$resData = $model->changeUsersCart($id, $qty, $user['id']) ?? $model->changeCart($id, $qty);
         if($user) {
             $user_id = $user['id'];
-            $resData = $model->changeUsersCart($id, $qty, $user_id);
+            //$resData = $model->changeUsersCart($id, $qty, $user_id);
+            $resData = $model->changeUsersCart($id, $qty, $user['id']);
             //debug($resData); die();
             die(json_encode($resData));
         }else{
             $resData = $model->changeCart($id, $qty);
             die(json_encode($resData));
         }
+       // die(json_encode($resData));
     }
 
     /**
@@ -195,6 +159,9 @@ debug($products); die();
 
     public function removefromcartAction(){
         $itemToDel = trim($_POST['id']);
+        $qty = trim($_POST['qty']);
+        $summ = trim($_POST['summ']);
+        $weight = trim($_POST['weight']);
         $model = new Cart();
         $user = User::isUser();
 
@@ -203,6 +170,12 @@ debug($products); die();
             $user_id = $user['id'];
             $remove = $model->removeFromUsersCart($user_id, $itemToDel);
             if($remove){
+                $_SESSION['user']['cart']['totalsum'] = $_SESSION['user']['cart']['totalsum'] - $summ;
+                $_SESSION['user']['cart']['totalqty'] = $_SESSION['user']['cart']['totalqty'] - $qty;
+                $_SESSION['user']['cart']['totalweight'] = $_SESSION['user']['cart']['totalweight'] - $weight;
+                if($_SESSION['user']['cart']['totalsum'] == 0){
+                    unset($_SESSION['user']['cart']);
+                }
                 $resData['success'] = 1; // записываем в результирующие данные успех операции
                 $resData['cart'] = $remove;
             }else{
@@ -217,7 +190,6 @@ debug($products); die();
                 $resData['success'] = 0;
             }
         }
-
         die(json_encode($resData));
     }
 /*
@@ -225,7 +197,11 @@ debug($products); die();
  */
     public function clearAction(){
         $model = new Cart();
-        $delCart = $model->deleteCart();
+        if(isset($_SESSION['user'])){
+            $delCart = $model->deleteUserCart($_SESSION['user']['id']);
+        }else{
+            $delCart = $model->deleteCart();
+        }
 
         $resData = array();
         if($delCart){
@@ -236,9 +212,78 @@ debug($products); die();
         die(json_encode($resData));
     }
 
+/*
+ * Удаление разницы товаров из Корзины при авторизации пользователя
+ */
+    public function clearDiffAction(){
+        $model = new Cart();
+        $resData = array();
+        $totalweight = $_SESSION['cart']['totalweight'];
+        $totalsum = $_SESSION['cart']['totalsum'];
+        $totalqty = $_SESSION['cart']['totalqty'];
+        $cartCurr = $_SESSION['cart.currency'];
+        $delCart = $model->deleteUserCart($_SESSION['user']['id']);
+        if($delCart){
+            $_SESSION['cart.currency'] = $cartCurr;
+            $addToUsersCart = $model->addToUsersCartDiff($_SESSION['user']['id'], $_SESSION['cart']['products']);
+            if($addToUsersCart){
+                $_SESSION['user']['cart'] = [];
+                $_SESSION['user']['cart']['totalweight'] = $totalweight;
+                $_SESSION['user']['cart']['totalsum'] = $totalsum;
+                $_SESSION['user']['cart']['totalqty'] = $totalqty;
+                unset($_SESSION['user']['cart_diff']);
+                $resData['success'] = 1;
+                $resData['message'] = 'Изменения в Корзине совершены успешно';
+            }else{
+                $resData['success'] = 0;
+                $resData['message'] = 'Что-то пошло в Корзине при добавлении не так:((';
+            }
+        }else{
+            $resData['success'] = 0;
+            $resData['message'] = 'Что-то пошло в Корзине при удалении не так:((';
+        }
+        die(json_encode($resData));
+    }
+/*
+ * Добавление разницы товаров из Корзины при авторизации пользователя
+ */
+    public function addDiffAction(){
+        $model = new Cart();
+        $resData = array();
+        $products = $_SESSION['cart']['products'] + $_SESSION['user']['cart_diff'];
+        unset($_SESSION['cart']['products']);
+        $cartCurr = $_SESSION['cart.currency'];
+        $delCart = $model->deleteUserCart($_SESSION['user']['id']);
+        if($delCart){
+            $_SESSION['cart.currency'] = $cartCurr;
+            $addToUsersCart = $model->addToUsersCartDiff($_SESSION['user']['id'], $products);
+            if($addToUsersCart){
+                foreach($products as $id=>$item){
+                    $resData['cart']['totalqty'] = array_sum(array_column($products, 'qty'));
+                    isset($resData['cart']['totalsum']) ? $resData['cart']['totalsum'] += $item['qty']*$item['itemPrice']: $resData['cart']['totalsum'] = $item['qty']*$item['itemPrice'];
+                    isset($resData['cart']['totalweight']) ? $resData['cart']['totalweight'] += $item['qty']*$item['itemWeight']: $resData['cart']['totalweight'] = $item['qty']*$item['itemWeight'];
+                }
+                $resData['success'] = 1;
+                $resData['message'] = 'Корзина успешно обновлена';
+            }else{
+                $resData['success'] = 0;
+                $resData['message'] = 'Что-то пошло в Корзине при добавлении не так:((';
+            }
+        }else{
+            $resData['success'] = 0;
+            $resData['message'] = 'Что-то пошло в Корзине при удалении не так:((';
+        }
+        die(json_encode($resData));
+    }
+
+
+
+/*
+ * оформление заказа клиента
+ */
     public function orderAction(){
         $resData = array();
-
+//debug($_POST['userInfo']); die();
         foreach([   'name'  => ['value'=>$_POST['userInfo']['name'], 'message'=>'Поле ФИО заполнено неверно'],
                     'email' => ['value'=>$_POST['userInfo']['email'], 'message'=>'Поле email заполнено неверно'],
                     'adress' => ['value'=>$_POST['userInfo']['adress'], 'message'=>'Поле адрес заполнено неверно'],
@@ -254,12 +299,15 @@ debug($products); die();
             }
         }
 
+        $shipping_info = $_POST['userInfo'];
+
         $order = $_POST['ItemsInOrder'];
         //debug($order); die();
         $products = [];
         foreach($order as $num => $item){
-            $multiple_id = $item['multiple_id'];
-            $id = explode('-', $multiple_id);
+            $products[$num]['multiple_id'] = $item['multiple_id'];
+            //$multiple_id = $item['multiple_id'];
+            $id = explode('-', $products[$num]['multiple_id']);
             $products[$num]['qty'] = $item['qty'];
             $products[$num]['product_id'] = $id[0];
             $q = count($id);
@@ -277,14 +325,88 @@ debug($products); die();
         foreach($products as $k=>$v){
             if((!isset($v['pp'])) && (!isset($v['pd']))){
                 $product[] = $model->getOneProduct($v['product_id']);
+                $product[$k]['multiple_id'] = $v['multiple_id'];
+                $product[$k]['qty'] = $v['qty'];
+                $product[$k]['sum'] = $v['qty']*$product[$k]['itemPrice'];
+                $product[$k]['product_info']['name'] = $product[$k]['name'];
+                $product[$k]['product_info']['alias'] = $product[$k]['alias'];
+                $product[$k]['product_info']['image'] = $product[$k]['image'];
+                if(isset($product[$k]['prDepArr'])){
+                    $product[$k]['product_info']['prDepArr'] = $product[$k]['prDepArr'];
+                    unset($product[$k]['prDepArr']);
+                }
+                if(isset($product[$k]['prValArr'])){
+                    $product[$k]['product_info']['prValArr'] = $product[$k]['prValArr'];
+                    unset($product[$k]['prValArr']);
+                }
+                unset($product[$k]['name']);
+                unset($product[$k]['alias']);
+                unset($product[$k]['image']);
+                $product[$k]['product_info'] = json_encode($product[$k]['product_info']);
             }elseif(!isset($v['pd'])){
                 $product[] = $model->getOneProduct($v['product_id'], $v['pp'], '');
+                $product[$k]['multiple_id'] = $v['multiple_id'];
+                $product[$k]['qty'] = $v['qty'];
+                $product[$k]['sum'] = $v['qty']*$product[$k]['itemPrice'];
+                $product[$k]['product_info']['name'] = $product[$k]['name'];
+                $product[$k]['product_info']['alias'] = $product[$k]['alias'];
+                $product[$k]['product_info']['image'] = $product[$k]['image'];
+                if(isset($product[$k]['prDepArr'])){
+                    $product[$k]['product_info']['prDepArr'] = $product[$k]['prDepArr'];
+                    unset($product[$k]['prDepArr']);
+                }
+                if(isset($product[$k]['prValArr'])){
+                    $product[$k]['product_info']['prValArr'] = $product[$k]['prValArr'];
+                    unset($product[$k]['prValArr']);
+                }
+                unset($product[$k]['name']);
+                unset($product[$k]['alias']);
+                unset($product[$k]['image']);
+                $product[$k]['product_info'] = json_encode($product[$k]['product_info']);
             }elseif(!isset($v['pp'])){
                 $product[] = $model->getOneProduct($v['product_id'], [], $v['pd']);
+                $product[$k]['multiple_id'] = $v['multiple_id'];
+                $product[$k]['qty'] = $v['qty'];
+                $product[$k]['sum'] = $v['qty']*$product[$k]['itemPrice'];
+                $product[$k]['product_info']['name'] = $product[$k]['name'];
+                $product[$k]['product_info']['alias'] = $product[$k]['alias'];
+                $product[$k]['product_info']['image'] = $product[$k]['image'];
+                if(isset($product[$k]['prDepArr'])){
+                    $product[$k]['product_info']['prDepArr'] = $product[$k]['prDepArr'];
+                    unset($product[$k]['prDepArr']);
+                }
+                if(isset($product[$k]['prValArr'])){
+                    $product[$k]['product_info']['prValArr'] = $product[$k]['prValArr'];
+                    unset($product[$k]['prValArr']);
+                }
+                unset($product[$k]['name']);
+                unset($product[$k]['alias']);
+                unset($product[$k]['image']);
+                $product[$k]['product_info'] = json_encode($product[$k]['product_info']);
             }else{
                 $product[] = $model->getOneProduct($v['product_id'], $v['pp'], $v['pd']);
+                $product[$k]['multiple_id'] = $v['multiple_id'];
+                $product[$k]['qty'] = $v['qty'];
+                $product[$k]['sum'] = $v['qty']*$product[$k]['itemPrice'];
+                $product[$k]['product_info']['name'] = $product[$k]['name'];
+                $product[$k]['product_info']['alias'] = $product[$k]['alias'];
+                $product[$k]['product_info']['image'] = $product[$k]['image'];
+                if(isset($product[$k]['prDepArr'])){
+                    $product[$k]['product_info']['prDepArr'] = $product[$k]['prDepArr'];
+                    unset($product[$k]['prDepArr']);
+                }
+                if(isset($product[$k]['prValArr'])){
+                    $product[$k]['product_info']['prValArr'] = $product[$k]['prValArr'];
+                    unset($product[$k]['prValArr']);
+                }
+                unset($product[$k]['name']);
+                unset($product[$k]['alias']);
+                unset($product[$k]['image']);
+                $product[$k]['product_info'] = json_encode($product[$k]['product_info']);
             }
         }
+        $sum = array_sum(array_column($product, 'sum'));
+
 //        $cart = new Cart();
 //        foreach($product as $k=>$row){
 //            $product_price = $cart->getValueFromArrays($row, 'price');
@@ -295,15 +417,36 @@ debug($products); die();
 //            $product[$k]['itemWeight'] = $product_weight;
 //        }
 
-        debug($product); die();
+        //debug($product); die();
 
         $user = User::isUser();
         if($user){
             $user_id = $user['id'];
+        }else{
+            $user_id = 0;
         }
 
+        $data = [];
+        $data['user_id'] = $user_id;
+        $data['shipping_info'] = json_encode($shipping_info);
+        $data['date_created'] = date("Y-m-d H:i:s");
+        $data['date_payment'] = NULL;
+        $data['sum'] = $sum;
+        $data['status'] = '0';
+        $data['note'] = 'Заказ принят';
+        //debug($data['shipping_info']); die();
+        $model = new Cart();
+        $order_id = $model->insertAndReturnId($table = 'orders', $data);
+        //debug($order_id); die();
 
+        $resData = [];
+        if($order_id){
 
+        }else{
+            $resData['error'] = 1;
+            $resData['message'] = 'Заказ не может быть оформлен по техническим причинам, попробуйте позднее';
+        }
+        die(json_encode($resData));
     }
 
 }

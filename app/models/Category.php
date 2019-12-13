@@ -15,9 +15,8 @@ class Category extends Model
        // $preparedInValues = implode(',', array_fill(0, count($arr), '?'));
 
         $table = $table ?: $this->table; //если передана таблица - берем ее, нет - берем указанную в модели таблицу
-        $sql = 'SELECT `name`, `alias`, `price`, `old_price`, `image` FROM '. $table. ' WHERE `category_id` IN (?)';
-
-        return $this->pdo->query($sql, [$arr]);
+        $sql = "SELECT `name`, `alias`, `price`, `old_price`, `image` FROM ". $table. " WHERE `category_id` IN ({$arr})";
+        return $this->pdo->query($sql, []);
     }
 
     public function getIds($id){

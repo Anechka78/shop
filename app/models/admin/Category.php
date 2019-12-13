@@ -16,4 +16,10 @@ class Category extends Model{
 
     }
 
+    public function createFilterCategory($category_id){
+        $sql = "CREATE TABLE `filter_"."$category_id"."` ( `id` INT(11) NOT NULL AUTO_INCREMENT , `product_id` INT(11) NOT NULL , PRIMARY KEY (`id`)) ENGINE = InnoDB;";
+        //var_dump($sql); die();
+        return $this->pdo->query($sql, []);
+    }
+
 }

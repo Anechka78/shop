@@ -57,8 +57,15 @@ class User extends Model
      */
     public function login($isAdmin = false){
         $login = !empty(trim($_POST['email'])) ? trim($_POST['email']) : null;
-        $password = !empty(trim($_POST['pwd'])) ? trim($_POST['pwd']) : null;
-        var_dump($_POST);
+        //$password = !empty(trim($_POST['pwd'])) ? trim($_POST['pwd']) : null;
+        if(isset($_POST['pwd']) && !empty(trim($_POST['pwd']))){
+            $password = trim($_POST['pwd']);
+        }elseif(isset($_POST['pwd1']) && !empty(trim($_POST['pwd1']))){
+            $password = trim($_POST['pwd1']);
+        }else{
+            null;
+        }
+        //var_dump($_POST);
         //var_dump($login.'  '.$password);
 
         if($login && $password){

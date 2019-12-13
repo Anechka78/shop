@@ -63,7 +63,11 @@ $('.cart-product__item').on('click', function (event) {
         changeItemsInCart(id, proc);
     } else if($(target).hasClass('itemToDel')){
         var proc = $(target).attr('data-proc');
-        deleteItemsFromCart(id, proc);
+        var qty = $('#itemInfo_'+id+' div.cart-product__info div.cart-product__count input.itemCnt').val();
+        var summ = $('#itemInfo_'+id+' div.cart-product__info div.cart-product__count span.itemPrice')[0].attributes[2].value*qty;
+        var weight = $('#itemInfo_'+id+' div.cart-product__info div.cart-product__count input.itemCnt')[0].attributes[6].value*qty;
+        //console.log(weight); die();
+        deleteItemsFromCart(id, qty, summ, weight);
     }
 });
 
@@ -94,7 +98,7 @@ $('.cart-product__item').on('click', function (event) {
             //Меняем стоимость товара в зависимости от кол-ва
             var price = $('#itemPrice_'+id).attr('value');//22.5 f.e.
             var sumSpan = $('#itemRealPrice_'+id);
-
+            //console.log(id);
             var itemsum = (price*count*course).toFixed(2);
             $(sumSpan).find('span').eq(0).html(itemsum);
 
@@ -113,6 +117,7 @@ $('.cart-product__item').on('click', function (event) {
                     showMiniCart(data['cart']);
                 } else{
                     console.log(data);
+                    alert(data['message']);
                     $('#cartForm').remove();
                     var div = document.createElement('div');
                     div.innerHTML = "В корзине пусто.";
@@ -136,23 +141,23 @@ $('.cart-product__item').on('click', function (event) {
     function getTotalCartSum() {
         var items = $('.product-summ span');
         //console.log(items); die();
-        //var items = document.getElementsByClassName('product-summ');
         var totalSumm = 0;
         var q = items.length;
         for(var i=0; i<q; i++ ){
             totalSumm += parseFloat(items[i].innerHTML, 2);
         }
+        //console.log(totalSumm); die();
         $('.summ-count').html(symLeft+totalSumm+symRight);
     }
 
 //****** УДАЛЕНИЕ ТОВАРА************
-    function deleteItemsFromCart(id, proc){
+    function deleteItemsFromCart(id, qty, summ, weight){
         var itemToDel = $('#itemToDel_'+id);
         // console.log(itemToDel); die();
         $('#itemInfo_'+id).remove();
         getTotalCartSum();
 
-        var postData = {id: id};
+        var postData = {id: id, qty: qty, summ: summ, weight: weight};
 
         $.ajax({
             type: 'POST',
@@ -161,10 +166,27 @@ $('.cart-product__item').on('click', function (event) {
             data: postData,
             dataType: 'json',
             success: function(data) {
-                if(data['cart']['totalsum'] > 0){
-                    showMiniCart(data['cart']);
+                var items = $('.product-summ span');
+                //console.log(items); die();
+                var totalSumm = 0;
+                var q = items.length;
+                for(var i=0; i<q; i++ ){
+                    totalSumm += parseFloat(items[i].innerHTML, 2);
+                }
+                var itemsqty = $('.itemCnt');
+                //console.log(itemsqty); die();
+                var totalQty = 0;
+                var r = itemsqty.length;
+                for(var t=0; t<r; t++ ){
+                    totalQty += +itemsqty[t].value;
+                }
+                var sum = totalSumm*course;
+                if(sum > 0){
+                    document.getElementById("cartCntItems").textContent=totalQty;
+                    document.getElementById("cartCntSum").textContent= symLeft+sum.toFixed(2)+symRight;
                 }else{
-                    showMiniCart(data['cart']);
+                    document.getElementById("cartCntItems").textContent=totalQty;
+                    document.getElementById("cartCntSum").innerHTML = 'КОРЗИНА';
                     $('#cartForm').remove();
                     var div = document.createElement('div');
                     div.innerHTML = "В корзине пусто.";
@@ -244,7 +266,7 @@ $('.cart-product__item').on('click', function (event) {
 
 function saveOrder(){
     var userInfo = getData('.user-order');
-    //console.log(userInfo);
+
 
     //if(userInfo['name'] == '' || userInfo['email'] == '' || userInfo['adress'] == ''|| userInfo['phone'] == ''){
     //    alert("Все обязательные поля должны быть заполнены!");

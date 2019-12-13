@@ -34,44 +34,36 @@ class Product extends Model
     }
 
     /**
+     * Получаем данные о продукте по его алиасу
+     * @param $alias алиас продукта
+     * @return mixed возвращает все поля из таблицы products БД
+     */
+    public function getProductInfoById($id)
+    {
+        $sql = "SELECT pr.*, cat.name as cat_name, cat.alias as cat_alias, vn.name as vn_name FROM " . self::$products_table . " AS pr
+                LEFT JOIN `categories` AS `cat` ON pr.category_id = cat.id
+                LEFT JOIN `vendor` AS `vn` ON pr.vendor = vn.id
+                WHERE pr.id = ?";
+        $product = $this->findBySql($sql, [$id])[0];
+
+        return $product;
+    }
+
+    /**
      * Получаем данные о продукте из таблицы products
      * @param $id - идентификатор продукта из таблицы products
      * @return mixed
      */
     public function getProductById($id){
-        $sql = "SELECT `id`, `name`, `alias`, `price`, `image`, `count`, `weight`, `status` FROM ". self::$products_table."
+        $sql = "SELECT `id`, `name`, `alias`, `price`, `image`, `count`, `weight` FROM ". self::$products_table."
                 WHERE id = ?";
         $product = $this->findBySql($sql, [$id])[0];
 
         return $product;
     }
 
-     /**
-     * Вносим данные о продукте в таблицу products_search для поиска по ним
-     * @param $id - идентификатор продукта из таблицы products
-     * @param $name - название продукта
-     * @param $description - описание продукта
-     */
-    public function setProductToSearch($id, $name, $description){
-        $sql = "INSERT  INTO `products_search` (`product_id`, `product_name`,`product_description`) VALUES (
-                 ?, ?, ?)";
-        $result = $this->findBySql($sql, [$id, $name, $description]);
-    }
-    /*
-    //Вносим данные о продукте в таблицу jsonproduct
-    public function jsonproduct($alias, $product){
-        $sql = "INSERT  INTO `jsonproduct` (`product_alias`,`product_json`) VALUES (
-                 ?, ?)";
-        $jsonprod = $this->findBySql($sql, [$alias, $product]);
-    }
-    //Получаем данные о продукте из таблицы jsonproduct
-    public function getProductByJson($alias){
-        $sql = "SELECT * FROM ". self::$product_json_table."
-                WHERE product_alias = ?";
-        $product = $this->findBySql($sql, [$alias])[0]['product_json'];
 
-        return $product;
-    }*/
+
 
     /**
      * Получаем простые характеристики товара для корзины из таблицы product_properties_values
@@ -133,7 +125,7 @@ class Product extends Model
      * @return mixed
      */
     public function getRelatedProducts($id){
-        $relatedSql = "SELECT `name`, `alias`, `price`, `old_price`, `image` FROM ". self::$related_table." JOIN ". self::$products_table. "
+        $relatedSql = "SELECT `id`, `name`, `alias`, `price`, `old_price`, `image` FROM ". self::$related_table." JOIN ". self::$products_table. "
                       ON products.id = related_products.related_id
                       WHERE related_products.product_id = ?";
         $related = $this->findBySql($relatedSql, [$id]);
@@ -225,37 +217,52 @@ class Product extends Model
         $product['id'] = $result['id'];
         $product['name'] = $result['name'];
         $product['alias'] = $result['alias'];
-        $product['price'] = $result['price'];
         $product['image'] = $result['image'];
-        $product['count'] = $result['count'];
-        $product['weight'] = $result['weight'];
-        $product['status'] = $result['status'];
+        $product['itemPrice'] = $result['price'];
+        $product['itemCount'] = $result['count'];
+        $product['itemWeight'] = $result['weight'];
 
         if(!$product){
             return false;
         }
-        if(count($pp_id) > 0){
-            $product_properties = $this->getProductPropertiesByIds($pp_id);
-            foreach($product_properties as $k=>$v){
-                $product['prValArr'][$k]['id'] = $v['id'];
-                $product['prValArr'][$k]['p_name'] = $v['p_name'];
-                $product['prValArr'][$k]['pv_name'] = $v['pv_name'];
-                $product['prValArr'][$k]['price'] = $v['price'];
-                $product['prValArr'][$k]['count'] = $v['count'];
-                $product['prValArr'][$k]['weight'] = $v['weight'];
-            }
-        }
 
         if(!empty($pd_id)){
             $product_dependencies = $this->getProductDependenciesById($pd_id, $id)[0];
-            $product['prDepArr'] = $product_dependencies;
-        }
-        //$cart = new Cart();
+            $product['prDepArr']['id'] = $product_dependencies['id'];
+            $product['prDepArr']['p_name'] = $product_dependencies['p_name'];
+            $product['prDepArr']['pv_name'] = $product_dependencies['pv_name'];
+            $product['prDepArr']['ch_name'] = $product_dependencies['ch_name'];
+            $product['prDepArr']['ch_val'] = $product_dependencies['ch_val'];
+            $product['prDepArr']['ch_value'] = $product_dependencies['ch_value'];
+            if(!empty($product_dependencies['price'])){
+                $product['itemPrice'] = $product_dependencies['price'];
+            }
+            if(!empty($product_dependencies['count'])){
+                $product['itemCount'] = $product_dependencies['count'];
+            }
+            if(!empty($product_dependencies['weight'])){
+                $product['itemWeight'] = $product_dependencies['weight'];
+            }
+            return $product;
+        }elseif(isset($pp_id) && count($pp_id) > 0){
+            $product_properties = $this->getProductPropertiesByIds($pp_id);
 
-            $product['itemPrice'] = $this->getValueFromArrays($product, 'price');
-            $product['itemCount'] = $this->getValueFromArrays($product, 'count');
-            $product['itemWeight'] = $this->getValueFromArrays($product, 'weight');
-        //debug($product); die();
+            foreach($product_properties as $k=>$v){
+                $product['prValArr'][$k]['id'] = $v['prop_val_id'];
+                $product['prValArr'][$k]['p_name'] = $v['p_name'];
+                $product['prValArr'][$k]['pv_name'] = $v['pv_name'];
+                if(!empty($v['price'])){
+                    $product['itemPrice'] = $v['price'];
+                }
+                if(!empty($v['count'])){
+                    $product['itemCount'] = $v['count'];
+                }
+                if(!empty($v['weight'])){
+                    $product['itemWeight'] = $v['weight'];
+                }
+            }
+            return $product;
+        }
 
         return $product;
     }

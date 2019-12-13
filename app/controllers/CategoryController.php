@@ -32,8 +32,10 @@ public function indexAction(){
             $arr[] = $cat['id'];
         }
     }*/
-    $rsChildCats = $model->getIds($category['id']);
-    $rsChildCats = !$rsChildCats ? $category['id'] : $rsChildCats . $category['id'];
+    $rsChildCats = rtrim($model->getIds($category['id']), ',');
+
+    $rsChildCats = !$rsChildCats ? $category['id'] : $category['id'].','.$rsChildCats;
+    //debug($rsChildCats); die();
 
     $title = $category['title'];
     $description = $category['description'];

@@ -18,9 +18,10 @@ class UserController extends AppController
     public function signupAction(){
         //die('qqqqqqqqqqqqqqqqqqqqqqqq');
         if(!empty($_POST)){
-            $user = new User();            //debug($user);
+            $user = new User();
             $data = $_POST;
-            $user->load($data);            //debug($user); die('qqqqqqqqqqqqqqqqqqqqqqqq');           //debug($_POST);
+            //var_dump($data); die();
+            $user->load($data);
             $resData = [];
             if(!$user->validate($data) || !$user->checkUnique()){
                 $user->getErrors();
@@ -32,7 +33,8 @@ class UserController extends AppController
             $user->attributes['pwd1'] = password_hash(trim($user->attributes['pwd1']), PASSWORD_DEFAULT);
 
             if($user->save()){
-                $_SESSION['success'] = 'Вы успешно зарегистрировались!';
+                //$user->login();
+                $_SESSION['success'] = 'Вы успешно зарегистрированы на сайте!';
                 $resData['user'] = $user;
                 $resData['success'] = 1;
                 $resData['message'] = $_SESSION['success'];
@@ -48,26 +50,37 @@ class UserController extends AppController
 
         //View::setMeta('Регистрация');
     }
-
+/*
+ * Авторизация пользователя на сайте
+ */
     public function loginAction(){
         if(!empty($_POST)){
-            //var_dump($_POST); die();
             $user = new User();
             $resData = [];
             if($user->login()){
-                //var_dump($_SESSION['user']); die('**********************');
                 $currency = isset($_SESSION['cart.currency']) ? $_SESSION['cart.currency'] : $_SESSION['cart.currency'] = App::$app->getProperty('currency');
                 $_SESSION['success'] = 'Вы успешно авторизованы';
+                $user_id = $_SESSION['user']['id'];
+                $userCart = new Cart();
+                $cart = $userCart->getUsersCart($user_id);
+
                 $resData['success'] = 1;
                 $resData['message'] = $_SESSION['success'];
                 $resData['user'] = $_SESSION['user'];
 
-                $user_id = $_SESSION['user']['id'];
-
-                $userCart = new Cart();
-                $cart = $userCart->getUsersCart($user_id);
-
-
+                if(!empty($cart['products']) && isset($_SESSION['cart'])){
+                    $cart_diff = array_diff_key($cart['products'], $_SESSION['cart']['products']);
+                    if(empty($cart_diff)){
+                        unset($_SESSION['cart']);
+                        $resData['cart_diff'] = [];
+                        $resData['cart'] = $cart;
+                    }else{
+                        $_SESSION['user']['cart_diff'] = $cart_diff;
+                        $resData['cart_diff'] = $cart_diff;
+                    }
+                } else if(!empty($cart['products'])){
+                    $resData['cart'] = $cart;
+                }
             }else{
                 $_SESSION['error'] = 'Логин/пароль введены неверно';
                 $resData['success'] = 0;
@@ -75,7 +88,6 @@ class UserController extends AppController
             }
             die(json_encode($resData));
         }
-       // View::setMeta('Вход');
     }
 
     public function logoutAction(){
@@ -90,4 +102,17 @@ class UserController extends AppController
             return false;
         }
     }
+
+    public function cartdiffAction(){
+
+        $this->layout = 'cartdiff';
+        //debug($this->route);
+        $cart_diff = $_POST;
+        //debug($cart_diff);
+
+        $this->set(compact('cart_diff'));
+
+    }
+
+
 }

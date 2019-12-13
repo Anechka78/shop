@@ -11,9 +11,6 @@ use im\libs\Pagination;
 class ProductController extends AppController{
 
     public function indexAction(){
-        //$data = $_POST;
-        //debug($data);
-
         $model = new Product();
         $page = isset($_GET['page'])? (int)$_GET['page'] : 1;
 
@@ -28,7 +25,7 @@ class ProductController extends AppController{
             $sort = 'DESC';
         }
 
-        $perpage = 5;
+        $perpage = 7;
         $count = $model->selectCount('products');
         $pagination = new Pagination($page, $perpage, $count);
 
@@ -53,77 +50,22 @@ class ProductController extends AppController{
         $this->set(compact('vendors', 'mods'));
         if(!empty($_POST)){
             $data = $_POST;
+            $_SESSION['form_data'] = $data;
 
-            //проверка на заполнение кол-ва товара
-            if($data['count'] == '0' || $data['count'] == '') {
-                if (isset($_SESSION['pd'])) {
-                    foreach ($_SESSION['pd'] as $k => $v) {
-                        if ($v['count'] == '0' || $v['count'] == '') {
-                            $_SESSION['error'] = 'Не указано количество товара';
-                            redirect();
-                        }
-                    }
-                } elseif(!isset($_SESSION['pd']) && isset($_SESSION['pv'])){
-                    foreach ($_SESSION['pv'] as $k => $v) {
-                        if ($v['count'] == '0' || $v['count'] == '') {
-                            $_SESSION['error'] = 'Не указано количество товара';
-                            redirect();
-                        }
-                    }
-                }elseif(!isset($_SESSION['pd']) && !isset($_SESSION['pv'])){
-                    $_SESSION['error'] = 'Не указано количество товара';
-                    redirect();
+            foreach ($data as $k=>$v){
+                if(empty($v)){
+                    $data[$k] =0;
                 }
-
-            }
-            //проверка на заполнение цены товара
-            if($data['price'] == '0' || $data['price'] == '') {
-                if (isset($_SESSION['pd'])) {
-                    foreach ($_SESSION['pd'] as $k => $v) {
-                        if ($v['price'] == '0' || $v['price'] == '') {
-                            $_SESSION['error'] = 'Не указана цена товара';
-                            redirect();
-                        }
-                    }
-                } elseif(!isset($_SESSION['pd']) && isset($_SESSION['pv'])) {
-                    foreach ($_SESSION['pv'] as $k => $v) {
-                        if ($v['price'] == '0' || $v['price'] == '') {
-                            $_SESSION['error'] = 'Не указана цена товара';
-                            redirect();
-                        }
-                    }
-                }elseif(!isset($_SESSION['pd']) && !isset($_SESSION['pv'])){
-                    $_SESSION['error'] = 'Не указана цена товара';
-                    redirect();
-                }
-
             }
 
-            //проверка на заполнение веса товара
-            if($data['weight'] == '0' || $data['weight'] == '') {
-                if (isset($_SESSION['pd'])) {
-                    foreach ($_SESSION['pd'] as $k => $v) {
-                        if ($v['weight'] == '0' || $v['weight'] == '') {
-                            $_SESSION['error'] = 'Не указан вес товара';
-                            redirect();
-                        }
-                    }
-                } elseif(!isset($_SESSION['pd']) && isset($_SESSION['pv'])) {
-                    foreach ($_SESSION['pv'] as $k => $v) {
-                        if ($v['weight'] == '0' || $v['weight'] == '') {
-                            $_SESSION['error'] = 'Не указан вес товара';
-                            redirect();
-                        }
-                    }
-                }elseif(!isset($_SESSION['pd']) && !isset($_SESSION['pv'])){
-                    $_SESSION['error'] = 'Не указан вес товара';
-                    redirect();
-                }
-
-            }
+            //проверка на заполнение кол-ва товара, цены и веса
+            $product->checkProductParams($data['count'], 'count', 'Не указано количество товара');
+            $product->checkProductParams($data['price'], 'price', 'Не указана цена товара');
+            $product->checkProductParams($data['weight'], 'weight', 'Не указан вес товара');
 
             //валидация данных, пришедших в POST
             $product->load($data);
+
             $product->attributes['status'] = $product->attributes['status'] ? '1' : '0';
             $product->attributes['hit'] = $product->attributes['hit'] ? '1' : '0';
 
@@ -133,48 +75,95 @@ class ProductController extends AppController{
 
             if(!$product->validate($data)){
                 $product->getErrors();
-                $_SESSION['form_data'] = $data;
                 redirect();
             }
-            if(isset($data['related'])){
-                $related = $data['related'];
-                unset($data['related']);
+            if(!isset($data['image'])){
+                $data['image'] = 'no-image.jpg';
             }
-
-            $data_product = [];
-            $data_product['name'] = $data['name'];
-            $data_product['category_id'] = $data['category_id'];
-            $data_product['vendor'] = $data['vendor'];
-            if(isset($data['image'])){
-                $data_product['image'] = $data['image'];
-            }
-            $data_product['title'] = $data['title'];
-            $data_product['meta_desc'] = $data['meta_desc'];
-            $data_product['description'] = $data['description'];
-            $data_product['price'] = $data['price'];
-            $data_product['old_price'] = $data['old_price'];
-            $data_product['count'] = $data['count'];
-            $data_product['weight'] = $data['weight'];
             if(isset($data['status'])){
-                $data_product['status'] = '1';
+                $data['status'] = '1';
+            }else{
+                $data['status'] = '0';
             }
-            if(isset($data['hit'])){
-                $data_product['hit'] = '1';
+            if(!isset($data['hit'])){
+                $data['hit'] = '0';
             }
 
-            if($id = $product->insertAndReturnId('products', $data_product)){
+            if($id = $product->insertAndReturnId('products', $data)){
                 $alias = [];
                 $model = new Model();
                 $alias['alias'] = $model->createAlias('products', 'alias', $data['name'], $id);
                 $model->updateTable('products', $alias, 'id', $id);
-                if(isset($related)){
-                    $product->editRelatedProducts($id, $related);
+                $data['id'] = $id;
+                $data['alias'] = $alias['alias'];
+
+                if(isset($data['related'])){
+                    $product->editRelatedProducts($id, $data['related']);
                 }
                 $product->saveGallery($id);
-                $product->addProductDependenciesInDb($id);
-                $product->addProductValuesInDb($id);
+                $product->addProductDependenciesInDb($id, $data['category_id']);
+                $product->addProductValuesInDb($id, $data['category_id']);
+
+                //Заносим id товара, название и описание в таблицу products_search для будущего поиска - нужно на этапе добавления нового товара!!!!
+                $product->setProductToSearch($id, $data['name'], $data['description']);
+
+                $model_product = new \app\models\Product();
+                //характеристики товара
+                $product_properties = $model_product->getProductPropertiesByIds($id);
+                $propertiesArr = [];
+                foreach($product_properties as $property){
+                    $propertiesArr[$property['p_name']][$property['id']]['product_id']     =  $property['product_id'];
+                    $propertiesArr[$property['p_name']][$property['id']]['pv_name']        =  $property['pv_name'];
+                    $propertiesArr[$property['p_name']][$property['id']]['pv_value']       =  $property['pv_value'];
+                    $propertiesArr[$property['p_name']][$property['id']]['price']          =  $property['price'];
+                    $propertiesArr[$property['p_name']][$property['id']]['old_price']      =  $property['old_price'];
+                    $propertiesArr[$property['p_name']][$property['id']]['count']          =  $property['count'];
+                    $propertiesArr[$property['p_name']][$property['id']]['weight']         =  $property['weight'];
+                }
+                $data['propertiesArr'] = $propertiesArr;
+
+                //Зависимые характеристики товара
+                $mods = $model_product->getProductDependenciesById(null, $id);
+
+                foreach($mods as $k=>$v){
+                    $parent_name = $v['p_name'];
+                    $child_name = $v['ch_name'];
+                }
+
+                $data['parent_name'] = $parent_name;
+                $data['child_name'] = $child_name;
+
+                $parentArr = [];
+                foreach($mods as $myRow){
+                    $parentArr   [$myRow['pv_name']]   [$myRow['id']]  ['product_id']       =  $myRow['product_id'];
+                    $parentArr   [$myRow['pv_name']]   [$myRow['id']]  ['parent_name']      =  $myRow['p_name'];
+                    $parentArr   [$myRow['pv_name']]   [$myRow['id']]  ['child_name']       =  $myRow['ch_name'];
+                    $parentArr   [$myRow['pv_name']]   [$myRow['id']]  ['child_val']        =  $myRow['ch_val'];
+                    $parentArr   [$myRow['pv_name']]   [$myRow['id']]  ['child_value']      =  $myRow['ch_value'];
+                    $parentArr   [$myRow['pv_name']]   [$myRow['id']]  ['count']            =  $myRow['count'];
+                    $parentArr   [$myRow['pv_name']]   [$myRow['id']]  ['weight']           =  $myRow['weight'];
+                    $parentArr   [$myRow['pv_name']]   [$myRow['id']]  ['price']            =  $myRow['price'];
+                    $parentArr   [$myRow['pv_name']]   [$myRow['id']]  ['old_price']        =  $myRow['old_price'];
+                }
+
+                $childsArr = [];
+                foreach ($parentArr as $size => $colors){
+                    foreach($colors as $key => $value){
+                        $childsArr[$value['child_val']][$value['child_value']][$key] = $size;
+                    }
+                }
+                $data['parentArr'] = $parentArr;
+                $data['childsArr'] = $childsArr;
+
+                //галерея из фотографий
+                $gallery = $model_product->getProductImages($id);
+                $data['gallery'] = $gallery;
+
+                $data = json_encode($data);
+                $product->jsonproduct($id, $alias['alias'], $data);
 
                 $_SESSION['success'] = 'Товар добавлен';
+                unset($_SESSION['form_data']);
             }
             redirect();
         }
@@ -350,7 +339,99 @@ class ProductController extends AppController{
         die(json_encode($resData));
     }
 
+    /**
+     * Редактирование товара
+     */
+    public function editAction(){
+        if(!empty($_POST)){
 
+        }
+        $id = $this->getRequestID();
+
+        $ad_model = new \app\models\admin\Product();
+        //$product = $model->getProductByAlias($alias);
+        $res = $ad_model->getProductByJson('product_id', $id);
+
+        $product = json_decode($res['product_json'], true);
+        //debug($res); die();
+        $product['cat_name']= $res['cat_name'];
+        $product['cat_alias']= $res['cat_alias'];
+        $product['vn_name']= $res['vn_name'];
+        //debug($jsproduct); die();
+
+
+
+        App::$app->setProperty('parent_id', $product['category_id']);
+        $obg = new Product();
+        $vendors = $obg->getAllVendors();
+
+        $model = new \app\models\Product();
+
+//        $product = $model->getProductInfoById($id);
+//        //debug($product);
+//        App::$app->setProperty('parent_id', $product['category_id']);
+//        $obg = new Product();
+//        $vendors = $obg->getAllVendors();
+//
+//        //связанные товары
+//        $product['related'] = $model->getRelatedProducts($product['id']);
+//
+//        //характеристики товара
+//        $product_properties = $model->getProductPropertiesByIds($product['id']);
+//        //debug($product_properties);
+//        $propertiesArr = [];
+//        foreach($product_properties as $property){
+//            $propertiesArr[$property['p_name']][$property['id']]['product_id']     =  $property['product_id'];
+//            $propertiesArr[$property['p_name']][$property['id']]['pv_name']        =  $property['pv_name'];
+//            $propertiesArr[$property['p_name']][$property['id']]['pv_value']       =  $property['pv_value'];
+//            $propertiesArr[$property['p_name']][$property['id']]['price']          =  $property['price'];
+//            $propertiesArr[$property['p_name']][$property['id']]['old_price']      =  $property['old_price'];
+//            $propertiesArr[$property['p_name']][$property['id']]['count']          =  $property['count'];
+//            $propertiesArr[$property['p_name']][$property['id']]['weight']         =  $property['weight'];
+//        }
+//        $product['propertiesArr'] = $propertiesArr;
+//        //debug($product);
+//
+//        //Зависимые характеристики товара
+//        $mods = $model->getProductDependenciesById(null, $product['id']);
+//        //debug($mods);
+//
+//        foreach($mods as $k=>$v){
+//            $parent_name = $v['p_name'];
+//            $child_name = $v['ch_name'];
+//        }
+//
+//        $parentArr = [];
+//        foreach($mods as $myRow){
+//            $parentArr   [$myRow['pv_name']]   [$myRow['id']]  ['product_id']       =  $myRow['product_id'];
+//            $parentArr   [$myRow['pv_name']]   [$myRow['id']]  ['parent_name']      =  $myRow['p_name'];
+//            $parentArr   [$myRow['pv_name']]   [$myRow['id']]  ['child_name']       =  $myRow['ch_name'];
+//            $parentArr   [$myRow['pv_name']]   [$myRow['id']]  ['child_val']        =  $myRow['ch_val'];
+//            $parentArr   [$myRow['pv_name']]   [$myRow['id']]  ['child_value']      =  $myRow['ch_value'];
+//            $parentArr   [$myRow['pv_name']]   [$myRow['id']]  ['count']            =  $myRow['count'];
+//            $parentArr   [$myRow['pv_name']]   [$myRow['id']]  ['weight']           =  $myRow['weight'];
+//            $parentArr   [$myRow['pv_name']]   [$myRow['id']]  ['price']            =  $myRow['price'];
+//            $parentArr   [$myRow['pv_name']]   [$myRow['id']]  ['old_price']        =  $myRow['old_price'];
+//        }
+//        //debug($parentArr);
+//
+//        $childsArr = [];
+//        foreach ($parentArr as $size => $colors){
+//            foreach($colors as $key => $value){
+//                $childsArr[$value['child_val']][$value['child_value']][$key] = $size;
+//            }
+//        }
+//        //debug($childsArr);
+//        $product['parentArr'] = $parentArr;
+//        $product['childsArr'] = $childsArr;
+//        debug($product);
+//        //галерея из фотографий
+//        $gallery = $model->getProductImages($product['id']);
+//        $product['gallery'] = $gallery;
+        View::setMeta('Редактирование товара', '', '');
+        $this->set(compact('product', 'gallery', 'vendors'));
+
+    }
 
 
 

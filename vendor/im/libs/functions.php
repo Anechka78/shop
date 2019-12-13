@@ -10,6 +10,7 @@ function debug($arr, $name=NULL){
  * @param bool|false $http URL, на который мы хотим перенаправить пользователя
  */
 function redirect($http = false){
+    //debug($_SESSION); die();
     if($http){
         $redirect = $http;
     }else{

@@ -17,8 +17,23 @@ class ProductController extends AppController
 
         //Получаем товар без характеристик из таблицы products
         $model = new Product();
-        $product = $model->getProductByAlias($alias);
-        //debug($product);
+        $ad_model = new \app\models\admin\Product();
+        //$product = $model->getProductByAlias($alias);
+        $res = $ad_model->getProductByJson('product_alias', $alias);
+
+        $product = json_decode($res['product_json'], true);
+
+        $product['cat_name']= $res['cat_name'];
+        $product['cat_alias']= $res['cat_alias'];
+        $product['vn_name']= $res['vn_name'];
+        //debug($product); die();
+
+        foreach($product['parentArr'] as $k=>$v){
+            foreach($v as $id=>$mods){
+                $parent_name = $mods['parent_name'];
+                $child_name = $mods['child_name'];
+            }
+        }
 
         //Получаем мета-данные
         $title = $product['title'];
@@ -30,8 +45,8 @@ class ProductController extends AppController
         $breadcrumbs = Breadcrumbs::getBreadcrumbs($product['category_id'], 'alias', $product['name']);
 
         //связанные товары
-        $related = $model->getRelatedProducts($product['id']);
-        $product['related'] = $related;
+        //$related = $model->getRelatedProducts($product['id']);
+        //$product['related'] = $related;
 
         //просмотренные ранее товары из кук
         $r_viewed = $model->getRecentlyViewed();
@@ -44,57 +59,57 @@ class ProductController extends AppController
         $model->setRecentlyViewed($product['id']);
 
         //галерея из фотографий
-        $gallery = $model->getProductImages($product['id']);
-        $product['gallery'] = $gallery;
+        //$gallery = $model->getProductImages($product['id']);
+        //$product['gallery'] = $gallery;
 
         //характеристики товара
-        $product_properties = $model->getProductPropertiesByIds($product['id']);
+        //$product_properties = $model->getProductPropertiesByIds($product['id']);
         //debug($product_properties);
-        $propertiesArr = [];
-        foreach($product_properties as $property){
-            $propertiesArr[$property['p_name']][$property['id']]['product_id']     =  $property['product_id'];
-            $propertiesArr[$property['p_name']][$property['id']]['pv_name']        =  $property['pv_name'];
-            $propertiesArr[$property['p_name']][$property['id']]['pv_value']       =  $property['pv_value'];
-            $propertiesArr[$property['p_name']][$property['id']]['price']          =  $property['price'];
-            $propertiesArr[$property['p_name']][$property['id']]['old_price']      =  $property['old_price'];
-            $propertiesArr[$property['p_name']][$property['id']]['count']          =  $property['count'];
-            $propertiesArr[$property['p_name']][$property['id']]['weight']         =  $property['weight'];
-        }
-        $product['propertiesArr'] = $propertiesArr;
+        //$propertiesArr = [];
+//        foreach($product_properties as $property){
+//            $propertiesArr[$property['p_name']][$property['id']]['product_id']     =  $property['product_id'];
+//            $propertiesArr[$property['p_name']][$property['id']]['pv_name']        =  $property['pv_name'];
+//            $propertiesArr[$property['p_name']][$property['id']]['pv_value']       =  $property['pv_value'];
+//            $propertiesArr[$property['p_name']][$property['id']]['price']          =  $property['price'];
+//            $propertiesArr[$property['p_name']][$property['id']]['old_price']      =  $property['old_price'];
+//            $propertiesArr[$property['p_name']][$property['id']]['count']          =  $property['count'];
+//            $propertiesArr[$property['p_name']][$property['id']]['weight']         =  $property['weight'];
+//        }
+//        $product['propertiesArr'] = $propertiesArr;
         //debug($product);
 
         //Зависимые характеристики товара
-        $mods = $model->getProductDependenciesById(null, $product['id']);
-        //debug($mods);
-
-        foreach($mods as $k=>$v){
-            $parent_name = $v['p_name'];
-            $child_name = $v['ch_name'];
-        }
-
-        $parentArr = [];
-        foreach($mods as $myRow){
-            $parentArr   [$myRow['pv_name']]   [$myRow['id']]  ['product_id']       =  $myRow['product_id'];
-            $parentArr   [$myRow['pv_name']]   [$myRow['id']]  ['parent_name']      =  $myRow['p_name'];
-            $parentArr   [$myRow['pv_name']]   [$myRow['id']]  ['child_name']       =  $myRow['ch_name'];
-            $parentArr   [$myRow['pv_name']]   [$myRow['id']]  ['child_val']        =  $myRow['ch_val'];
-            $parentArr   [$myRow['pv_name']]   [$myRow['id']]  ['child_value']      =  $myRow['ch_value'];
-            $parentArr   [$myRow['pv_name']]   [$myRow['id']]  ['count']            =  $myRow['count'];
-            $parentArr   [$myRow['pv_name']]   [$myRow['id']]  ['weight']           =  $myRow['weight'];
-            $parentArr   [$myRow['pv_name']]   [$myRow['id']]  ['price']            =  $myRow['price'];
-            $parentArr   [$myRow['pv_name']]   [$myRow['id']]  ['old_price']        =  $myRow['old_price'];
-        }
-        //debug($parentArr);
-
-        $childsArr = [];
-        foreach ($parentArr as $size => $colors){
-            foreach($colors as $key => $value){
-                $childsArr[$value['child_val']][$value['child_value']][$key] = $size;
-            }
-        }
+//        $mods = $model->getProductDependenciesById(null, $product['id']);
+//        //debug($mods);
+//
+//        foreach($mods as $k=>$v){
+//            $parent_name = $v['p_name'];
+//            $child_name = $v['ch_name'];
+//        }
+//
+//        $parentArr = [];
+//        foreach($mods as $myRow){
+//            $parentArr   [$myRow['pv_name']]   [$myRow['id']]  ['product_id']       =  $myRow['product_id'];
+//            $parentArr   [$myRow['pv_name']]   [$myRow['id']]  ['parent_name']      =  $myRow['p_name'];
+//            $parentArr   [$myRow['pv_name']]   [$myRow['id']]  ['child_name']       =  $myRow['ch_name'];
+//            $parentArr   [$myRow['pv_name']]   [$myRow['id']]  ['child_val']        =  $myRow['ch_val'];
+//            $parentArr   [$myRow['pv_name']]   [$myRow['id']]  ['child_value']      =  $myRow['ch_value'];
+//            $parentArr   [$myRow['pv_name']]   [$myRow['id']]  ['count']            =  $myRow['count'];
+//            $parentArr   [$myRow['pv_name']]   [$myRow['id']]  ['weight']           =  $myRow['weight'];
+//            $parentArr   [$myRow['pv_name']]   [$myRow['id']]  ['price']            =  $myRow['price'];
+//            $parentArr   [$myRow['pv_name']]   [$myRow['id']]  ['old_price']        =  $myRow['old_price'];
+//        }
+//        //debug($parentArr);
+//
+//        $childsArr = [];
+//        foreach ($parentArr as $size => $colors){
+//            foreach($colors as $key => $value){
+//                $childsArr[$value['child_val']][$value['child_value']][$key] = $size;
+//            }
+//        }
         //debug($childsArr);
-        $product['parentArr'] = $parentArr;
-        $product['childsArr'] = $childsArr;
+//        $product['parentArr'] = $parentArr;
+//        $product['childsArr'] = $childsArr;
 
 
 
@@ -104,7 +119,7 @@ class ProductController extends AppController
 
         /*
          //Заносим id товара, название и описание в таблицу products_search для будущего поиска - нужно на этапе добавления нового товара!!!!
-        //$search = $model->setProductToSearch($product['id'], $product['name'], $product['description']);
+        $search = $model->setProductToSearch($product['id'], $product['name'], $product['description']);
 
 
         // функция как загнать массив с данными о продукте в json виде в таблицу jsonproduct mysql
@@ -126,7 +141,8 @@ class ProductController extends AppController
 
 
         //Передаем данные в вид
-        $this->set(compact('product', 'gallery', 'recentlyViewed', 'breadcrumbs', 'parent_name', 'child_name'));
+        //$this->set(compact('product', 'gallery', 'recentlyViewed', 'breadcrumbs', 'parent_name', 'child_name'));
+        $this->set(compact('product', 'recentlyViewed', 'breadcrumbs', 'parent_name', 'child_name'));
 
     }
 

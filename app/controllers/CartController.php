@@ -98,7 +98,7 @@ class CartController extends AppController{
         $this->layout = 'cart';
         View::setMeta('Корзина покупок', '', '');
         $model = new Cart();
-
+//debug($_SESSION);
         $user = User::isUser();
         if($user){
             $user_id = $user['id'];
@@ -283,14 +283,12 @@ class CartController extends AppController{
  */
     public function orderAction(){
         $resData = array();
-//debug($_POST['userInfo']); die();
         foreach([   'name'  => ['value'=>$_POST['userInfo']['name'], 'message'=>'Поле ФИО заполнено неверно'],
                     'email' => ['value'=>$_POST['userInfo']['email'], 'message'=>'Поле email заполнено неверно'],
                     'adress' => ['value'=>$_POST['userInfo']['adress'], 'message'=>'Поле адрес заполнено неверно'],
                     'phone' => ['value'=>$_POST['userInfo']['phone'], 'message'=>'Поле телефон заполнено неверно'],
                     'note' => ['value'=>$_POST['userInfo']['note'], 'message'=>'Поле примечание заполнено неверно'],
                 ] as $key=>$val){
-            //echo $val['value'].PHP_EOL;
             $res = Validator::$key($val['value'], $val['message']);
             if($res !== true){
                 $resData['success'] = 0;
@@ -302,7 +300,6 @@ class CartController extends AppController{
         $shipping_info = $_POST['userInfo'];
 
         $order = $_POST['ItemsInOrder'];
-        //debug($order); die();
         $products = [];
         foreach($order as $num => $item){
             $products[$num]['multiple_id'] = $item['multiple_id'];
@@ -407,18 +404,6 @@ class CartController extends AppController{
         }
         $sum = array_sum(array_column($product, 'sum'));
 
-//        $cart = new Cart();
-//        foreach($product as $k=>$row){
-//            $product_price = $cart->getValueFromArrays($row, 'price');
-//            $product_count = $cart->getValueFromArrays($row, 'count');
-//            $product_weight = $cart->getValueFromArrays($row, 'weight');
-//            $product[$k]['itemPrice'] = $product_price;
-//            $product[$k]['itemCount'] = $product_count;
-//            $product[$k]['itemWeight'] = $product_weight;
-//        }
-
-        //debug($product); die();
-
         $user = User::isUser();
         if($user){
             $user_id = $user['id'];
@@ -429,19 +414,41 @@ class CartController extends AppController{
         $data = [];
         $data['user_id'] = $user_id;
         $data['shipping_info'] = json_encode($shipping_info);
+        $data['currency'] = json_encode($_SESSION['cart.currency']);
         $data['date_created'] = date("Y-m-d H:i:s");
         $data['date_payment'] = NULL;
         $data['sum'] = $sum;
         $data['status'] = '0';
-        $data['note'] = 'Заказ принят';
-        //debug($data['shipping_info']); die();
+        $data['note'] = '-';
+
         $model = new Cart();
         $order_id = $model->insertAndReturnId($table = 'orders', $data);
-        //debug($order_id); die();
 
         $resData = [];
         if($order_id){
-
+            $orders_items = [];
+            foreach ($product as $num=>$order_item) {
+                $orders_items[$num]['order_id'] = $order_id;
+                $orders_items[$num]['order_date'] = $data['date_created'];
+                $orders_items[$num]['user_id'] = $data['user_id'];
+                $orders_items[$num]['product_id'] = $order_item['id'];
+                $orders_items[$num]['multiple_id'] = $order_item['multiple_id'];
+                $orders_items[$num]['product_info'] = $order_item['product_info'];
+                $orders_items[$num]['qty'] = $order_item['qty'];
+                $orders_items[$num]['price'] = $order_item['itemPrice'];
+                $orders_items[$num]['note'] = 'принято';
+            }
+            $ins_items = $model->insertInTable($table = 'order_items', $orders_items);
+            if($ins_items){
+                if(isset($_SESSION['cart'])){
+                    unset($_SESSION['cart']);
+                }else if(isset($_SESSION['user']['cart'])){
+                    unset($_SESSION['user']['cart']);
+                    $model->deleteUserCart($user_id);
+                }
+                $resData['success'] = 1;
+                $resData['message'] = 'Заказ принят, с Вами свяжется оператор в ближайшее время';
+            }
         }else{
             $resData['error'] = 1;
             $resData['message'] = 'Заказ не может быть оформлен по техническим причинам, попробуйте позднее';

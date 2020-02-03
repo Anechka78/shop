@@ -21,38 +21,60 @@
                 <thead>
                 <tr>
                     <th>ID заказа</th>
+                    <th>Дата создания</th>
                     <th>Покупатель</th>
                     <th>Статус</th>
                     <th>Сумма</th>
-                    <th>Валюта</th>
-                    <th>Дата создания</th>
-                    <th>Дата изменения</th>
+                    <th>Оплата</th>
+                    <th>Информация для доставки</th>
+                    <th>Прим. от магазина</th>
                     <th>Редактирование</th>
                 </tr>
                 </thead>
                 <tbody>
                 <?php foreach($orders as $order): ?>
-                <tr>
+                <tr data_order="<?= $order['id']?>" data_user="<?= $order['user_id']?>">
                     <td><?= $order['id']?></td>
-                    <td><?= $order['user_name']?></td>
-                    <td><?= $order['status'] ? 'Завершен' : 'Новый';?></td>
-                    <td><?= $order['sum']?></td>
-                    <td><?= $order['currency']?></td>
                     <td><?= $order['date_created']?></td>
-                    <td><?= $order['date_modification']?></td>
-                    <td><a href="<?= ADMIN;?>/order/view?id=<?= $order['id']?>"><i class="fa fa-fw fa-eye"></i></a></td>
+                    <td><?= $order['user_id']?></td>
+                    <td><?php if($order['status'] == '0'): ?>
+                        <?= 'Заказ принят';?>
+                        <?php elseif($order['status'] == '1'): ?>
+                        <?= 'Заказ подтвержден';?>
+                        <?php elseif($order['status'] == '2'): ?>
+                        <?= 'Заказ на сборке';?>
+                        <?php elseif($order['status'] == '3'): ?>
+                        <?= 'Заказ в пути';?>
+                        <?php elseif($order['status'] == '4'): ?>
+                        <?= 'Заказ доставлен';?>
+                        <?php elseif($order['status'] == '5'): ?>
+                        <?= 'Заказ завершен';?>
+                        <?php endif; ?>
+                    </td>
+                    <td><?= $order['sum']?></td>
+                    <td><?= $order['date_payment']?></td>
+                    <td>
+                        <?php foreach($order['shipping_info'] as $name=>$value): ?>
+                            <?= $name?>: <?= $value?><br>
+                        <?php endforeach; ?>
+
+
+                    </td>
+                    <td><?= $order['note']?></td>
+                    <td><a href="<?= ADMIN;?>/order/edit?id=<?= $order['id']?>"><i class="fa fa-fw fa-eye"></i></a></td>
                 </tr>
                 <?php endforeach; ?>
                 </tbody>
                 <tfoot>
                 <tr>
                     <th>ID заказа</th>
+                    <th>Дата создания</th>
                     <th>Покупатель</th>
                     <th>Статус</th>
                     <th>Сумма</th>
-                    <th>Валюта</th>
-                    <th>Дата создания</th>
-                    <th>Дата изменения</th>
+                    <th>Оплата</th>
+                    <th>Информация для доставки</th>
+                    <th>Прим. от магазина</th>
                     <th>Редактирование</th>
                 </tr>
                 </tfoot>

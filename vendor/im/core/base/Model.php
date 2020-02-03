@@ -224,7 +224,7 @@ abstract class Model
     /**
      * Метод для вставки данных в таблицу БД
      * @param string $table - таблица, в которую будут добавлены данные
-     * @return mixed
+     * @return last insertid
      */
     public function insertAndReturnId($table = '', $data){
         $table = $table ?: $this->table; //если передана таблица - берем ее, нет - берем указанную в модели таблицу
@@ -243,6 +243,36 @@ abstract class Model
         $sql .= ' VALUES (:';
         $sql .= implode(", :", array_keys($newData)).')';
         return $this->pdo->lastId($sql, $newData);
+    }
+
+    /**
+     * Метод для вставки данных в таблицу БД
+     * @param string $table - таблица, в которую будут добавлены данные
+     * @return true/false
+     */
+    public function insertInTable($table = '', $data){
+        $table = $table ?: $this->table;
+        $columns = 'DESCRIBE '.$table;
+        $columnsArr = $this->pdo->query($columns, []);
+        $newData = [];
+        foreach($columnsArr as $arr){
+            foreach($data as $k=>$v){
+                foreach($v as $j=>$h){
+                    if($arr['Field'] == $j){
+                        $newData[$k][$j] = $h;
+                    }
+                }
+            }
+        }
+
+        $sql = 'INSERT INTO '. $table. '(`';
+        $sql .= implode("`, `", array_keys($newData[0])).'`)';
+        $sql .= ' VALUES (:';
+        $sql .= implode(", :", array_keys($newData[0])).')';
+        foreach ($newData as $row){
+            $this->pdo->execute($sql, $row);
+        }
+        return 1;
     }
 
     /**

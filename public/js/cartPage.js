@@ -300,7 +300,15 @@ function saveOrder(){
         success: function(data){ // если экшн вернул данные, проверяем
             if(data['success']){ // если все записалось в БД хорошо (ключи success и message создаются в контроллере карт и экшене ордер)
                 alert(data['message']); // выводим сообщение, что все ок
+
                 document.location = '/';// затем редиректим на главную страницу
+                document.getElementById("cartCntItems").textContent='0';
+                document.getElementById("cartCntSum").innerHTML = 'КОРЗИНА';
+                $('#cartForm').remove();
+                var div = document.createElement('div');
+                div.innerHTML = "В корзине пусто.";
+                var wrap = $('.wrapper_cart')[0];
+                wrap.appendChild(div);
             } else{ // если произошла ошибка
                 alert(data['message']);
             }

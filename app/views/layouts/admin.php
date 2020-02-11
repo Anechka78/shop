@@ -335,6 +335,18 @@
                 <li><a href="<?= ADMIN ?>/"><i class="fa fa-home"></i> <span>Home</span></a></li>
                 <li><a href="<?= ADMIN ?>/order"><i class="fa fa-shopping-cart"></i> <span>Заказы</span></a></li>
                 <li class="treeview">
+                    <a href="#"><i class="fa fa-navicon"></i> <span>Характеристики</span>
+                        <span class="pull-right-container">
+                <i class="fa fa-angle-left pull-right"></i>
+              </span>
+                    </a>
+                    <ul class="treeview-menu">
+                        <li><a href="<?= ADMIN ?>/property">Список характеристик</a></li>
+                        <li><a href="<?= ADMIN ?>/property/add">Добавить характеристику</a></li>
+                        <li><a href="<?= ADMIN ?>/property/addpropval">Добавить ее значение</a></li>
+                    </ul>
+                </li>
+                <li class="treeview">
                     <a href="#"><i class="fa fa-navicon"></i> <span>Категории</span>
                         <span class="pull-right-container">
                 <i class="fa fa-angle-left pull-right"></i>
@@ -642,6 +654,7 @@
 <script src="bower_components/ckeditor/ckeditor.js"></script>
 <script src="bower_components/ckeditor/adapters/jquery.js"></script>
 <script src="plugins/my.js"></script>
+<script src="/js/admin.js"></script>
 <!-- AdminLTE dashboard demo (This is only for demo purposes) -->
 <!--<script src="dist/js/pages/dashboard.js"></script>-->
 <!-- AdminLTE for demo purposes -->
@@ -663,5 +676,6 @@
         })
     })
 </script>
+
 </body>
 </html>

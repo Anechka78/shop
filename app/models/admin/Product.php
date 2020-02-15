@@ -20,6 +20,8 @@ class Product extends Model{
         'weight'=> '',
         'hit'=> '',
         'status'=> '',
+        'new'=>'',
+        'sale'=>'',
         'alias'=> '',
     ];
 
@@ -27,12 +29,17 @@ class Product extends Model{
         'required' => [
             ['title'],
             ['category_id'],
-            ['price']
+            ['price'],
+            ['vendor'],
+            ['weight']
         ],
         'integer' => [
             ['category_id'],
-            ['vendor'],
             ['count'],
+            ['hit'],
+            ['status'],
+            ['new'],
+            ['sale'],
         ],
         'numeric' => [
             ['price'],
@@ -62,27 +69,25 @@ class Product extends Model{
         return $properties;
     }
 
-    public function checkProductParams($param, $elem, $message){
+    public function checkProductParams($param, $elem){
         if($param == '0' || $param == '') {
             if (isset($_SESSION['pd'])) {
                 foreach ($_SESSION['pd'] as $k => $v) {
                     if ($v[$elem] == '0' || $v[$elem] == '') {
-                        $_SESSION['error'] = $message;
-                        redirect();
+                        return false;
                     }
                 }
             } elseif(!isset($_SESSION['pd']) && isset($_SESSION['pv'])){
                 foreach ($_SESSION['pv'] as $k => $v) {
                     if ($v[$elem] == '0' || $v[$elem] == '') {
-                        $_SESSION['error'] = $message;
-                        redirect();
+                        return false;
                     }
                 }
             }elseif(!isset($_SESSION['pd']) && !isset($_SESSION['pv'])){
-                $_SESSION['error'] = $message;
-                redirect();
+                return false;
             }
         }
+        return true;
     }
 
     public function addProductDependenciesInDb($id, $category_id){
@@ -226,10 +231,9 @@ class Product extends Model{
         return $mod_values;
     }
 
-    public function editRelatedProducts($id, $related){
+    public function addRelatedProducts($id, $related){
         $sql = "SELECT `related_id` FROM `related_products` WHERE `product_id` = ?";
         $related_products = $this->findBySql($sql, [$id]);
-
         // если менеджер убрал связанные товары - удаляем их
         if(empty($related) && !empty($related_products)){
             $sql = "DELETE FROM `related_products` WHERE `product_id` = ?";
@@ -249,22 +253,20 @@ class Product extends Model{
             return;
         }
         //сравниваем массивы на наличие изменений в БД и заполненных полях
-        if(!empty($related)){
-            $result = array_diff($related_products, $related);
-            if(!empty($result) || count($related_products) != count($related)){
-                $sql = "DELETE FROM `related_products` WHERE `product_id` = ?";
-                $this->findBySql($sql, [$id]);
-                $sql_part = '';
-                foreach($related as $v){
-                    $v = (int)$v;
-                    $sql_part .= "($id, $v),";
-                }
-                $sql_part = rtrim($sql_part, ',');
-                $sql = "INSERT INTO `related_products` (`product_id`, `related_id`) VALUES {$sql_part}";
-                $this->findBySql($sql, []);
 
+        if(!empty($related) && !empty($related_products)){
+            $sql = "DELETE FROM `related_products` WHERE `product_id` = ?";
+            $this->findBySql($sql, [$id]);
+            $sql_part = '';
+            foreach($related as $v){
+                $v = (int)$v;
+                $sql_part .= "($id, $v),";
             }
+            $sql_part = rtrim($sql_part, ',');
+            $sql1 = "INSERT INTO `related_products` (`product_id`, `related_id`) VALUES {$sql_part}";
+            $this->findBySql($sql1, []);
         }
+
     }
 
     public function saveGallery($id){

@@ -43,11 +43,186 @@ class ProductController extends AppController{
      * Добавление нового товара
      */
     public function addAction(){
-        View::setMeta('Новый товар', '', '');
+        //debug($_SESSION);
+        View::setMeta('Добавить товар', '', '');
         $product = new Product();
         $vendors = $product->getAllVendors();
         $mods = $product->getAllMods();
-        $this->set(compact('vendors', 'mods'));
+        $secret_key = 515556;
+//        $secret_key = rand(100000, 999999);
+//
+//        $_SESSION['add_product'][$secret_key] = [];
+
+        $this->set(compact('vendors', 'mods', 'secret_key'));
+    }
+
+    /**
+     * Добавление основной информации о товаре
+     */
+    public function addMainInfoAction(){
+        $resData=[];
+        if(!empty($_POST)){
+            $data = $_POST;
+            //пока кладем пустую картинку
+            $data['image'] = 'no-image.jpg';
+            $secret_key = $data['secret_key'];
+
+            $_SESSION['form_data'] = $data;
+            $_SESSION['add_product'][$secret_key] = $data;
+
+            $product = new Product();
+
+            //проверка на заполнение цены и веса товара
+            if(!$product->checkProductParams($data['price'], 'price')){
+                $resData['success'] = 0;
+                $resData['message'] = 'Базовая цена товара должна быть указана';
+                die(json_encode($resData));
+            }
+            if(!$product->checkProductParams($data['weight'], 'weight')){
+                $resData['success'] = 0;
+                $resData['message'] = 'Базовый вес товара должен быть указан';
+                die(json_encode($resData));
+            }
+            if(empty($data['count'])){
+                $data['count'] = 0;
+            }
+            if(empty($data['old_price'])){
+                $data['old_price'] = 0;
+            }
+            //валидация данных, пришедших в POST
+            $product->load($data);
+            if(!$product->validate($data)){
+                $resData['success'] = 0;
+                $resData['message'] = $product->getErrors();
+                die(json_encode($resData));
+            }
+
+            //добавление товара в БД таблицу products
+            if($id = $product->insertAndReturnId('products', $data)){
+                $alias = [];
+                $model = new Model();
+                $alias['alias'] = $model->createAlias('products', 'alias', $data['name'], $id);
+                $model->updateTable('products', $alias, 'id', $id);
+                $data['id'] = $id;
+                $data['alias'] = $alias['alias'];
+                $_SESSION['add_product'][$secret_key]['id'] = $id;
+                $_SESSION['add_product'][$secret_key]['alias'] = $alias['alias'];
+
+                $resData['secret_key'] = $secret_key;
+                $resData['product_id'] = $id;
+                $resData['product_name'] = $data['name'];
+                $resData['success'] = 1;
+                $resData['message'] = 'Информация о товаре была добавлена';
+            }else{
+                $resData['success'] = 0;
+                $resData['message'] = 'Сбой при добавлении информации';
+            }
+        }else{
+            $resData['success'] = 0;
+            $resData['message'] = 'Информация не была добавлена';
+        }
+        die(json_encode($resData));
+    }
+
+    /**
+     * Обновление основной информации о товаре
+     */
+    public function updateMainInfoAction(){
+        $resData=[];
+
+        if(!empty($_POST)){
+            $data = $_POST;
+        }else{
+            $resData['success'] = 0;
+            $resData['message'] = 'Нет данных для обновления';
+            die(json_encode($resData));
+        }
+
+        $id = $data['product_id'];
+        unset($data['product_id']);
+
+        if(isset($data['secret_key'])){
+            $secret_key = $data['secret_key'];
+            unset($data['secret_key']);
+        }
+
+        $model = new Product();
+        $product = $model->findOne($id, 'id', 'products')[0];
+
+        $productDiff = array_diff_assoc($data, $product);
+        //debug($productDiff); die();
+
+        if(!empty($productDiff)){
+            if(!$model->updateTable('products', $productDiff, 'id', $id)){
+                $resData['success'] = 0;
+                $resData['message'] = 'Обновить данные не удалось';
+            }else{
+                if(!empty($productDiff['name'])){
+                    $alias = [];
+                    $aliasModel = new Model();
+                    $alias['alias'] = $aliasModel->createAlias('products', 'alias', $data['name'], $id);
+                    $model->updateTable('products', $alias, 'id', $id);
+                }
+                $resData['product_name'] = $data['name'];
+                $resData['success'] = 1;
+                $resData['message'] = 'Информация о товаре была обновлена';
+                if($secret_key){
+                    foreach($_SESSION['add_product'][$secret_key] as $key=>$value){
+                        foreach($productDiff as $key1=>$value1){
+                            if($key == $key1){
+                                $_SESSION['add_product'][$secret_key][$key] = $value1;
+                            }
+                        }
+                    }
+                }
+            }
+        }else{
+            $resData['success'] = 0;
+            $resData['message'] = 'Нет данных для обновления';
+        }
+        die(json_encode($resData));
+    }
+
+
+    /**
+     * Добавление связанных товаров
+     */
+    public function addRelatedAction(){
+        if(!empty($_POST)){
+            $data = $_POST;
+            $resData = [];
+            if(empty($data['product_id'])){
+                $resData['success'] = 0;
+                $resData['message'] = 'Нет информации о товаре для ввода';
+                die(json_encode($resData));
+            }
+            $product = new Product();
+            $product->addRelatedProducts($data['product_id'], $data['related']);
+            $_SESSION[$data['secret_key']]['related'] = $data['related'];
+            $resData['success'] = 1;
+            $resData['message'] = 'Информация о связанных товарах была добавлена';
+            die(json_encode($resData));
+        }
+        $resData['success'] = 0;
+        $resData['message'] = 'Нет информации';
+        die(json_encode($resData));
+    }
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+    public function figAction(){
+
         if(!empty($_POST)){
             $data = $_POST;
             $_SESSION['form_data'] = $data;
@@ -57,7 +232,7 @@ class ProductController extends AppController{
                     $data[$k] =0;
                 }
             }
-
+            $product = new Product();
             //проверка на заполнение кол-ва товара, цены и веса
             $product->checkProductParams($data['count'], 'count', 'Не указано количество товара');
             $product->checkProductParams($data['price'], 'price', 'Не указана цена товара');
